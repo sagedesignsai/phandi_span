@@ -1,10 +1,10 @@
 "use client";
 
+import React, { useState, useEffect } from 'react';
 import { ResumeViewer } from './viewer';
 import { Loader } from '@/components/ai-elements/loader';
 import { Artifact, ArtifactContent, ArtifactHeader, ArtifactTitle, ArtifactDescription } from '@/components/ai-elements/artifact';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
 import type { Resume } from '@/lib/models/resume';
 import { getResume, saveResume } from '@/lib/storage/resume-store';
 import { useSharedChatContext } from '@/lib/ai/chat-context';
@@ -27,20 +27,24 @@ export function RealtimeResumeViewer({ className, onResumeUpdate }: RealtimeResu
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | undefined>();
 
+  // Store onResumeUpdate in ref to avoid dependency issues
+  const onResumeUpdateRef = React.useRef(onResumeUpdate);
+  onResumeUpdateRef.current = onResumeUpdate;
+
   // Load initial resume
   useEffect(() => {
     if (resumeId) {
       const resume = getResume(resumeId);
       if (resume) {
         setCurrentResume(resume);
-        if (onResumeUpdate) {
-          onResumeUpdate(resume);
+        if (onResumeUpdateRef.current) {
+          onResumeUpdateRef.current(resume);
         }
       }
     } else {
       setCurrentResume(null);
     }
-  }, [resumeId, onResumeUpdate]);
+  }, [resumeId]); // Removed onResumeUpdate from deps
 
   // Listen to tool results and update resume in real-time
   useEffect(() => {
@@ -72,8 +76,8 @@ export function RealtimeResumeViewer({ className, onResumeUpdate }: RealtimeResu
             saveResume(result.resume);
             setCurrentResume(result.resume);
             hasUpdate = true;
-            if (onResumeUpdate) {
-              onResumeUpdate(result.resume);
+            if (onResumeUpdateRef.current) {
+              onResumeUpdateRef.current(result.resume);
             }
           }
 
@@ -83,8 +87,8 @@ export function RealtimeResumeViewer({ className, onResumeUpdate }: RealtimeResu
             if (newResume) {
               setCurrentResume(newResume);
               hasUpdate = true;
-              if (onResumeUpdate) {
-                onResumeUpdate(newResume);
+              if (onResumeUpdateRef.current) {
+                onResumeUpdateRef.current(newResume);
               }
             }
           }
@@ -108,7 +112,7 @@ export function RealtimeResumeViewer({ className, onResumeUpdate }: RealtimeResu
         clearTimeout(updateTimer);
       }
     };
-  }, [messages, resumeId, onResumeUpdate, status]);
+  }, [messages, resumeId, status]); // Removed onResumeUpdate from deps
 
   // Don't show anything if no resume and no resumeId
   if (!currentResume && !resumeId) {

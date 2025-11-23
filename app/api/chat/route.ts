@@ -1,4 +1,4 @@
-import { type UIMessage, validateUIMessages, convertToModelMessages, streamText } from 'ai';
+import { type UIMessage, validateUIMessages, convertToModelMessages, streamText, stepCountIs } from 'ai';
 import { chatModel } from '@/lib/ai/provider';
 import { resumeToolsWithArtifacts, setCurrentResumeContext } from '@/lib/ai/tools-with-artifacts';
 import { getResumeCreationPrompt, getResumeEditingPrompt } from '@/lib/ai/prompts';
@@ -52,12 +52,12 @@ export async function POST(req: Request) {
       messages: convertToModelMessages(validatedMessages),
       system: systemPrompt,
       tools: resumeToolsWithArtifacts,
-      maxSteps: 10, // Max tool calls
+      stopWhen: stepCountIs(10), // Max tool calls
       onStepFinish: (step) => {
         // Log step completion for debugging
         if (process.env.NODE_ENV === 'development') {
           console.log('[Step Finish]', {
-            step: step.stepType,
+            stepNumber: step.number,
             toolCalls: step.toolCalls?.length || 0,
           });
         }

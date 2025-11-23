@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import type { ReactNode } from "react"
 
 interface SiteHeaderProps {
-  title?: string;
+  title?: string | ReactNode;
   description?: string;
   actions?: ReactNode;
   showSidebarTrigger?: boolean;
@@ -31,11 +31,11 @@ export function SiteHeader({
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
         {showSidebarTrigger && (
           <>
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mx-2 data-[orientation=vertical]:h-4"
-            />
+        <SidebarTrigger className="-ml-1" />
+        <Separator
+          orientation="vertical"
+          className="mx-2 data-[orientation=vertical]:h-4"
+        />
           </>
         )}
         
@@ -57,9 +57,9 @@ export function SiteHeader({
         
         {/* Actions on the right */}
         {actions && (
-          <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
             {actions}
-          </div>
+        </div>
         )}
       </div>
     </header>

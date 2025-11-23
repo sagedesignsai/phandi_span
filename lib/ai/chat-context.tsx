@@ -71,21 +71,25 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setChat(createChat());
   }, []);
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = React.useMemo(
+    () => ({
+      chat,
+      resumeId,
+      setResumeId,
+      chatId,
+      setChatId,
+      clearChat,
+      onResumeUpdate,
+      setOnResumeUpdate,
+      useSpecialists,
+      setUseSpecialists,
+    }),
+    [chat, resumeId, setResumeId, chatId, setChatId, clearChat, onResumeUpdate, setOnResumeUpdate, useSpecialists, setUseSpecialists]
+  );
+
   return (
-    <ChatContext.Provider
-      value={{
-        chat,
-        resumeId,
-        setResumeId,
-        chatId,
-        setChatId,
-        clearChat,
-        onResumeUpdate,
-        setOnResumeUpdate,
-        useSpecialists,
-        setUseSpecialists,
-      }}
-    >
+    <ChatContext.Provider value={contextValue}>
       {children}
     </ChatContext.Provider>
   );

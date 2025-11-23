@@ -52,12 +52,12 @@ export default function DashboardPage() {
           title="My Resumes"
           description="Manage and edit your resumes"
           actions={
-            <Button asChild>
-              <Link href="/resumes/new">
-                <PlusIcon className="size-4 mr-2" />
-                Create New Resume
-              </Link>
-            </Button>
+                <Button asChild>
+                  <Link href="/resumes/new">
+                    <PlusIcon className="size-4 mr-2" />
+                    Create New Resume
+                  </Link>
+                </Button>
           }
         />
         <div className="flex flex-1 flex-col">

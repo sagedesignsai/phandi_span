@@ -69,6 +69,10 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
   // Track initial resumeId to avoid unnecessary chat recreation
   const initialResumeIdRef = React.useRef<string | undefined>(resumeId);
 
+  // Store onResumeUpdate in ref to avoid dependency issues
+  const onResumeUpdateRef = React.useRef(onResumeUpdate);
+  onResumeUpdateRef.current = onResumeUpdate;
+
   // Set resume context when component mounts or resumeId prop changes
   useEffect(() => {
     if (resumeId) {
@@ -77,8 +81,8 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
       initialResumeIdRef.current = resumeId;
       setCurrentResumeContext(resumeId);
       const resume = getResume(resumeId);
-      if (resume && onResumeUpdate) {
-        onResumeUpdate(resume);
+      if (resume && onResumeUpdateRef.current) {
+        onResumeUpdateRef.current(resume);
       }
     } else {
       if (initialResumeIdRef.current) {
@@ -87,17 +91,19 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
       }
       setCurrentResumeContext(null);
     }
-  }, [resumeId, setResumeId, onResumeUpdate]);
+  }, [resumeId, setResumeId]); // Removed onResumeUpdate from deps
 
-  // Set resume update callback
+  // Set resume update callback - use ref to avoid dependency issues
   useEffect(() => {
-    if (onResumeUpdate) {
-      setOnResumeUpdate(onResumeUpdate);
+    if (onResumeUpdateRef.current) {
+      setOnResumeUpdate((updatedResume: Resume) => {
+        onResumeUpdateRef.current?.(updatedResume);
+      });
     }
     return () => {
       setOnResumeUpdate(undefined);
     };
-  }, [onResumeUpdate, setOnResumeUpdate]);
+  }, [setOnResumeUpdate]); // Removed onResumeUpdate from deps
 
   // Handle tool results and save resumes
   useEffect(() => {
@@ -118,8 +124,8 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
             setResumeId(result.resumeId, false);
           }
 
-          if (onResumeUpdate) {
-            onResumeUpdate(result.resume);
+          if (onResumeUpdateRef.current) {
+            onResumeUpdateRef.current(result.resume);
           }
         }
 
@@ -128,14 +134,14 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
           const newResume = getResume(result.resumeId);
           if (newResume) {
             setResumeId(result.resumeId, false);
-            if (onResumeUpdate) {
-              onResumeUpdate(newResume);
+            if (onResumeUpdateRef.current) {
+              onResumeUpdateRef.current(newResume);
             }
           }
         }
       }
     }
-  }, [messages, resumeId, contextResumeId, onResumeUpdate, setResumeId]);
+  }, [messages, resumeId, contextResumeId, setResumeId]); // Removed onResumeUpdate from deps
 
   const handleSubmit = (message: PromptInputMessage) => {
     const hasText = Boolean(message.text);
@@ -276,10 +282,10 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                           const isLastPart = partIndex === message.parts.length - 1;
                           const isPartStreaming = isStreaming && isLastPart && isLastMessage;
 
-                          switch (part.type) {
-                            case 'text':
+                      switch (part.type) {
+                        case 'text':
                               const textContent = (part as any).text || '';
-                              return (
+                          return (
                                 <Fragment key={`${message.id}-${partIndex}`}>
                                   <Message from={message.role}>
                                     <MessageContent>
@@ -307,8 +313,8 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                                 </Fragment>
                               );
 
-                            case 'reasoning':
-                              return (
+                        case 'reasoning':
+                          return (
                                 <Reasoning
                                   key={`${message.id}-${partIndex}`}
                                   className="w-full"
@@ -316,8 +322,8 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                                 >
                                   <ReasoningTrigger />
                                   <ReasoningContent>{(part as any).text}</ReasoningContent>
-                                </Reasoning>
-                              );
+                            </Reasoning>
+                          );
 
                             case 'source-url':
                             case 'source-document':
@@ -333,8 +339,8 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                                 };
                                 const toolName = toolPart.toolName || toolPart.type.replace('tool-', '');
 
-                                return (
-                                  <Tool
+                          return (
+                            <Tool
                                     key={`${message.id}-${partIndex}`}
                                     defaultOpen={toolPart.state === 'output-error' || toolPart.state === 'output-available'}
                                   >
@@ -357,9 +363,9 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                                   </Tool>
                                 );
                               }
-                              return null;
-                          }
-                        })}
+                          return null;
+                      }
+                    })}
                       </div>
                     );
                   })}
@@ -387,7 +393,7 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                 </PromptInputAttachments>
                 <PromptInputTextarea
                   onChange={(e) => setInput(e.target.value)}
-                  value={input}
+            value={input}
                   placeholder={
                     resumeId
                       ? "What would you like to add or change in your resume?"
@@ -398,21 +404,21 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                 />
               </PromptInputBody>
               <PromptInputFooter>
-                <PromptInputTools>
-                  <PromptInputActionMenu>
-                    <PromptInputActionMenuTrigger />
-                    <PromptInputActionMenuContent>
+              <PromptInputTools>
+                <PromptInputActionMenu>
+                  <PromptInputActionMenuTrigger />
+                  <PromptInputActionMenuContent>
                       <PromptInputActionAddAttachments />
-                    </PromptInputActionMenuContent>
-                  </PromptInputActionMenu>
-                </PromptInputTools>
+                  </PromptInputActionMenuContent>
+                </PromptInputActionMenu>
+              </PromptInputTools>
                 <PromptInputSubmit
                   disabled={!input.trim() && status !== 'streaming'}
                   status={status}
                   onClick={status === 'streaming' ? stop : undefined}
                 />
-              </PromptInputFooter>
-            </PromptInput>
+            </PromptInputFooter>
+          </PromptInput>
           </div>
         </div>
       </div>

@@ -9,7 +9,7 @@ import type { Resume } from '@/lib/models/resume';
  * Resume Agent Context
  * Provides context about the current resume being worked on
  */
-export interface ResumeAgentContext {
+export interface ResumeAgentContext extends Record<string, unknown> {
   resumeId?: string | null;
   userId?: string;
 }
@@ -21,23 +21,23 @@ export interface ResumeAgentContext {
  */
 export function createResumeAgent(resumeId?: string | null): Agent<ResumeAgentContext> {
   // Set resume context for tools
-  setCurrentResumeContext(resumeId);
+  setCurrentResumeContext(resumeId ?? null);
 
   // Determine instructions based on whether we're editing or creating
   const instructions = resumeId
     ? getResumeEditingPrompt({
-        id: resumeId,
-        title: '',
-        personalInfo: { name: '' },
-        sections: [],
-        template: 'default',
-        metadata: {
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          lastEdited: new Date().toISOString(),
-          version: 1,
-        },
-      })
+      id: resumeId,
+      title: '',
+      personalInfo: { name: '' },
+      sections: [],
+      template: 'default',
+      metadata: {
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastEdited: new Date().toISOString(),
+        version: 1,
+      },
+    })
     : getResumeCreationPrompt();
 
   return new Agent<ResumeAgentContext>({
@@ -72,7 +72,6 @@ export function createResumeAgent(resumeId?: string | null): Agent<ResumeAgentCo
       if (process.env.NODE_ENV === 'development') {
         console.log('[Resume Agent Event]', {
           type: event.type,
-          agent: event.agent?.name,
           ...(event.type === 'agent-handoff' && {
             from: event.from,
             to: event.to,
@@ -152,18 +151,18 @@ export function createResumeAgents() {
     instructions: (context) => {
       const basePrompt = context?.resumeId
         ? getResumeEditingPrompt({
-            id: context.resumeId,
-            title: '',
-            personalInfo: { name: '' },
-            sections: [],
-            template: 'default',
-            metadata: {
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              lastEdited: new Date().toISOString(),
-              version: 1,
-            },
-          })
+          id: context.resumeId,
+          title: '',
+          personalInfo: { name: '' },
+          sections: [],
+          template: 'default',
+          metadata: {
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            lastEdited: new Date().toISOString(),
+            version: 1,
+          },
+        })
         : getResumeCreationPrompt();
 
       return `${basePrompt}\n\nYou can route complex tasks to specialized agents, or handle them yourself for simple requests.`;
@@ -171,7 +170,6 @@ export function createResumeAgents() {
     tools: resumeToolsWithArtifacts, // Full access to all tools
     handoffs: [personalInfoAgent, experienceAgent, educationAgent, skillsAgent],
     maxTurns: 10,
-    maxRounds: 3, // Allow up to 3 handoffs
   });
 
   return {

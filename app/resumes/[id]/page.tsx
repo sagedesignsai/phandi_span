@@ -7,8 +7,9 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
 import { ResumeViewer } from '@/components/resume/viewer';
 import { ExportButton } from '@/components/resume/export-button';
+import { TemplateSelector } from '@/components/resume/template-selector';
 import { Button } from '@/components/ui/button';
-import { getResume, deleteResume } from '@/lib/storage/resume-store';
+import { getResume, deleteResume, saveResume } from '@/lib/storage/resume-store';
 import { EditIcon, ArrowLeftIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -43,6 +44,14 @@ export default function ResumeDetailPage({
     if (resume) {
       deleteResume(resume.id);
       router.push('/dashboard');
+    }
+  };
+
+  const handleTemplateChange = (templateId: string) => {
+    if (resume) {
+      const updatedResume = { ...resume, template: templateId };
+      saveResume(updatedResume);
+      setResume(updatedResume);
     }
   };
 
@@ -85,25 +94,26 @@ export default function ResumeDetailPage({
             description={`Last edited ${new Date(resume.metadata.lastEdited).toLocaleDateString()}`}
             actions={
               <>
-                <Button variant="ghost" size="icon" asChild>
-                  <Link href="/dashboard">
-                    <ArrowLeftIcon className="size-4" />
-                  </Link>
-                </Button>
-                <ExportButton resume={resume} />
-                <Button variant="outline" asChild>
-                  <Link href={`/resumes/${resume.id}/edit`}>
-                    <EditIcon className="size-4 mr-2" />
-                    Edit
-                  </Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDeleteDialog(true)}
-                >
-                  <TrashIcon className="size-4 mr-2" />
-                  Delete
-                </Button>
+                  <Button variant="ghost" size="icon" asChild>
+                    <Link href="/dashboard">
+                      <ArrowLeftIcon className="size-4" />
+                    </Link>
+                  </Button>
+                <TemplateSelector resume={resume} onTemplateChange={handleTemplateChange} />
+                  <ExportButton resume={resume} />
+                  <Button variant="outline" asChild>
+                    <Link href={`/resumes/${resume.id}/edit`}>
+                      <EditIcon className="size-4 mr-2" />
+                      Edit
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <TrashIcon className="size-4 mr-2" />
+                    Delete
+                  </Button>
               </>
             }
           />

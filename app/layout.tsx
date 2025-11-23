@@ -35,9 +35,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ChatProvider>
-            <NextTopLoader />
-            {children}
-            <Toaster position="bottom-right" richColors />
+          <NextTopLoader />
+          {children}
+          <Toaster position="bottom-right" richColors />
           </ChatProvider>
         </ThemeProvider>
       </body>
