@@ -1,8 +1,8 @@
-import { type UIMessage, validateUIMessages, convertToModelMessages, streamText, stepCountIs } from 'ai';
-import { chatModel } from '@/lib/ai/provider';
-import { resumeToolsWithArtifacts, setCurrentResumeContext } from '@/lib/ai/tools-with-artifacts';
-import { getResumeCreationPrompt, getResumeEditingPrompt } from '@/lib/ai/prompts';
+import { type UIMessage, validateUIMessages } from 'ai';
+import { createResumeAgent, createResumeAgents } from '@/lib/ai/resume-agent';
+import { setCurrentResumeContext } from '@/lib/ai/tools-with-artifacts';
 import { loadResumeToServer } from '@/lib/storage/resume-store-server';
+import { getInitialGreeting } from '@/lib/ai/prompts';
 import type { Resume } from '@/lib/models/resume';
 
 export const maxDuration = 30;
@@ -41,31 +41,57 @@ export async function POST(req: Request) {
       loadResumeToServer(resume);
     }
 
-    // Get system prompt based on whether we're editing or creating
-    const systemPrompt = resumeId && resume
-      ? getResumeEditingPrompt(resume)
-      : getResumeCreationPrompt();
+    // Create the appropriate agent
+    const agent = useSpecialists
+      ? createResumeAgents().orchestrator
+      : createResumeAgent(resumeId || null);
 
-    // Stream response using streamText with tools
-    const result = streamText({
-      model: chatModel,
-      messages: convertToModelMessages(validatedMessages),
-      system: systemPrompt,
-      tools: resumeToolsWithArtifacts,
-      stopWhen: stepCountIs(10), // Max tool calls
-      onStepFinish: (step) => {
-        // Log step completion for debugging
+    // Get the latest user message (agent handles conversation history via memory)
+    const latestMessage = validatedMessages[validatedMessages.length - 1];
+
+    // Ensure chatId is available for memory persistence
+    const memoryContext: Record<string, unknown> = {
+      resumeId: resumeId || null,
+      ...(userId && { userId }),
+      ...(chatId && { chatId }), // Critical for memory to persist conversation history
+    };
+
+    // Use agent's toUIMessageStream method for proper agentic behavior
+    // Per AI SDK Tools Agents docs: agent automatically loads conversation history from memory
+    return agent.toUIMessageStream({
+      message: latestMessage,
+      context: memoryContext,
+      maxRounds: useSpecialists ? 3 : 1, // Allow handoffs in specialist mode
+      maxSteps: 15, // Maximum tool calls per agent round
+      onEvent: (event) => {
+        // Log agent events for debugging
         if (process.env.NODE_ENV === 'development') {
-          console.log('[Step Finish]', {
-            stepNumber: step.number,
-            toolCalls: step.toolCalls?.length || 0,
+          console.log('[Agent Event]', {
+            type: event.type,
+            ...(event.type === 'agent-handoff' && {
+              from: event.from,
+              to: event.to,
+            }),
+            ...(event.type === 'agent-start' && {
+              agent: event.agent,
+              round: event.round,
+            }),
           });
         }
       },
+      onFinish: async ({ messages: finalMessages }) => {
+        // Log completion for debugging
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Chat Completed]', {
+            messageCount: finalMessages.length,
+            resumeId,
+            chatId,
+          });
+        }
+      },
+      sendReasoning: true, // Show agent's thinking process
+      sendSources: false,
     });
-
-    // Return UI message stream response
-    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error('Chat API error:', error);
     return new Response(

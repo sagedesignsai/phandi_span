@@ -2,7 +2,8 @@ import { Agent } from '@ai-sdk-tools/agents';
 import { InMemoryProvider } from '@ai-sdk-tools/memory/in-memory';
 import { chatModel } from './provider';
 import { resumeToolsWithArtifacts, setCurrentResumeContext } from './tools-with-artifacts';
-import { getResumeCreationPrompt, getResumeEditingPrompt } from './prompts';
+import { getResumeCreationPrompt, getResumeEditingPrompt, getInitialGreeting } from './prompts';
+import { getResumeServer } from '@/lib/storage/resume-store-server';
 import type { Resume } from '@/lib/models/resume';
 
 /**
@@ -23,35 +24,47 @@ export function createResumeAgent(resumeId?: string | null): Agent<ResumeAgentCo
   // Set resume context for tools
   setCurrentResumeContext(resumeId ?? null);
 
+  // Get actual resume data if available
+  let currentResume: Resume | null = null;
+  if (resumeId) {
+    currentResume = getResumeServer(resumeId);
+  }
+
   // Determine instructions based on whether we're editing or creating
-  const instructions = resumeId
-    ? getResumeEditingPrompt({
-      id: resumeId,
-      title: '',
-      personalInfo: { name: '' },
-      sections: [],
-      template: 'default',
-      metadata: {
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastEdited: new Date().toISOString(),
-        version: 1,
-      },
-    })
+  const instructions = currentResume
+    ? getResumeEditingPrompt(currentResume)
     : getResumeCreationPrompt();
 
   return new Agent<ResumeAgentContext>({
     name: resumeId ? 'Resume Editor' : 'Resume Creator',
     model: chatModel,
     instructions: (context) => {
-      // Context-aware instructions
+      // Context-aware instructions with workflow guidance
+      let baseInstructions = instructions;
+
       if (context?.resumeId) {
-        return `${instructions}\n\nYou are currently working on resume ID: ${context.resumeId}`;
+        baseInstructions += `\n\nYou are currently working on resume ID: ${context.resumeId}`;
       }
-      return instructions;
+
+      // Add workflow guidance for proactive questioning
+      baseInstructions += `\n\nWORKFLOW GUIDANCE:
+- On FIRST message: Start with a warm greeting like: "${getInitialGreeting()}" Then immediately ask for name and target position.
+- ALWAYS start your response by checking progress with checkWorkflowProgress tool (unless it's the very first message and no resume exists yet)
+- After each check, ask the NEXT appropriate question from the workflow
+- Be proactive: Don't wait for the user to tell you what to ask next
+- After gathering information, immediately use the appropriate tool
+- Celebrate milestones: "Great!", "Excellent!", "Perfect!", "That's impressive!"
+- Guide naturally: "Now let's move on to..." or "Next, I'd like to know about..."
+- Ask ONE question at a time to keep the conversation focused
+- Use checkWorkflowProgress periodically (every 2-3 exchanges) to see what's missing and what to ask next
+- When user provides name and target position, immediately use initializeResume tool, then continue with next questions
+
+Remember: You're an enthusiastic guide, not a passive form filler. Lead the conversation with energy and encouragement!`;
+
+      return baseInstructions;
     },
     tools: resumeToolsWithArtifacts,
-    maxTurns: 10, // Maximum tool call iterations
+    maxTurns: 15, // Increased for more conversational depth
     memory: {
       provider: new InMemoryProvider(),
       workingMemory: {
@@ -91,57 +104,136 @@ export function createResumeAgents() {
   const personalInfoAgent = new Agent<ResumeAgentContext>({
     name: 'Personal Info Collector',
     model: chatModel,
-    instructions: 'Focus on collecting personal information: name, contact details, location, and professional links. Be thorough and ask clarifying questions.',
+    instructions: `You're the Personal Information Specialist! Your role is to collect contact details and professional links with enthusiasm.
+
+APPROACH:
+- Ask engagingly: "What's your email address?" (one at a time)
+- After each answer, immediately use updatePersonalInfo tool (can update multiple fields at once)
+- Celebrate completion: "Perfect! Now let's get your phone number..."
+- Be encouraging: "Great contact info! Any professional links you'd like to include?"
+- Mention: "I've updated your resume - you should see the changes in the editor!"
+
+Ask for (in order):
+1. Email address
+2. Phone number  
+3. Location/city
+4. LinkedIn profile (if they have one)
+5. GitHub/Portfolio links (if applicable)
+
+Always use tools immediately after gathering each piece of information!`,
     tools: {
       initializeResume: resumeToolsWithArtifacts.initializeResume,
       updatePersonalInfo: resumeToolsWithArtifacts.updatePersonalInfo,
+      updateResumeTitle: resumeToolsWithArtifacts.updateResumeTitle,
+      changeTemplate: resumeToolsWithArtifacts.changeTemplate,
       getResumeContext: resumeToolsWithArtifacts.getResumeContext,
+      checkWorkflowProgress: resumeToolsWithArtifacts.checkWorkflowProgress,
     },
-    maxTurns: 5,
-    matchOn: ['name', 'email', 'phone', 'contact', 'personal', 'linkedin', 'github'],
+    maxTurns: 8,
+    matchOn: ['name', 'email', 'phone', 'contact', 'personal', 'linkedin', 'github', 'location', 'address'],
   });
 
   // Agent for work experience
   const experienceAgent = new Agent<ResumeAgentContext>({
     name: 'Experience Specialist',
     model: chatModel,
-    instructions: 'Focus on collecting and organizing work experience. Help users articulate their achievements and responsibilities clearly.',
+    instructions: `You're the Work Experience Expert! Help users showcase their professional journey effectively.
+
+APPROACH:
+- Start with most recent position: "Tell me about your most recent job"
+- Ask ONE question at a time, conversationally:
+  1. "What was your job title?"
+  2. "What company did you work for?"
+  3. "When did you start? (and when did you end, or is it current?)"
+  4. "What were your main responsibilities?"
+  5. "Any achievements or results you're proud of? (quantify if possible!)"
+
+- After collecting ALL details for a position, use addExperience tool immediately
+- Celebrate: "That's impressive! Any other positions to add?"
+- Encourage specifics: "Try to include numbers, percentages, or concrete results"
+
+Be supportive and help them articulate their achievements!`,
     tools: {
       addExperience: resumeToolsWithArtifacts.addExperience,
+      updateExperience: resumeToolsWithArtifacts.updateExperience,
+      deleteExperience: resumeToolsWithArtifacts.deleteExperience,
       createResumeSection: resumeToolsWithArtifacts.createResumeSection,
+      updateSectionTitle: resumeToolsWithArtifacts.updateSectionTitle,
       getResumeContext: resumeToolsWithArtifacts.getResumeContext,
+      checkWorkflowProgress: resumeToolsWithArtifacts.checkWorkflowProgress,
     },
-    maxTurns: 5,
-    matchOn: ['experience', 'work', 'job', 'employment', 'career', 'position', 'company'],
+    maxTurns: 10,
+    matchOn: ['experience', 'work', 'job', 'employment', 'career', 'position', 'company', 'role', 'worked'],
   });
 
   // Agent for education
   const educationAgent = new Agent<ResumeAgentContext>({
     name: 'Education Specialist',
     model: chatModel,
-    instructions: 'Focus on collecting education details: degrees, institutions, dates, and academic achievements.',
+    instructions: `You're the Education Expert! Help users highlight their educational background effectively.
+
+APPROACH:
+- Ask conversationally, one question at a time:
+  1. "What's your highest level of education?"
+  2. "What degree did you earn? (e.g., Bachelor of Science in Computer Science)"
+  3. "Which institution did you attend?"
+  4. "When did you graduate? (or expected graduation date)"
+  5. "Any honors, GPA worth mentioning, or relevant coursework?"
+
+- After gathering complete details, use addEducation tool immediately
+- Ask: "Any other degrees or certifications from educational institutions?"
+- Be encouraging: "Education is a strong foundation!"
+
+Help them present their educational achievements professionally!`,
     tools: {
       addEducation: resumeToolsWithArtifacts.addEducation,
+      updateEducation: resumeToolsWithArtifacts.updateEducation,
       createResumeSection: resumeToolsWithArtifacts.createResumeSection,
+      updateSectionTitle: resumeToolsWithArtifacts.updateSectionTitle,
       getResumeContext: resumeToolsWithArtifacts.getResumeContext,
+      checkWorkflowProgress: resumeToolsWithArtifacts.checkWorkflowProgress,
     },
-    maxTurns: 5,
-    matchOn: ['education', 'degree', 'university', 'college', 'school', 'gpa', 'graduation'],
+    maxTurns: 8,
+    matchOn: ['education', 'degree', 'university', 'college', 'school', 'gpa', 'graduation', 'studied', 'major'],
   });
 
   // Agent for skills and projects
   const skillsAgent = new Agent<ResumeAgentContext>({
     name: 'Skills & Projects Specialist',
     model: chatModel,
-    instructions: 'Focus on collecting technical skills, soft skills, and project details. Help users showcase their capabilities effectively.',
+    instructions: `You're the Skills & Projects Expert! Help users showcase their technical abilities and notable work.
+
+FOR SKILLS:
+- Ask engagingly: "What are your strongest technical or hard skills?"
+- Follow up: "What soft skills or professional competencies would you highlight?"
+- Categorize skills appropriately (technical vs soft)
+- Use addSkills tool after gathering all skills
+- Encourage: "Skills are crucial for getting noticed!"
+
+FOR PROJECTS:
+- Ask: "Do you have any notable projects or portfolio work?"
+- For each project, gather:
+  1. Project name
+  2. Brief description
+  3. Technologies used
+  4. Key outcomes or results
+- Use addProject tool for each project
+- Ask: "Any other projects worth highlighting?"
+
+Be enthusiastic about helping them showcase their capabilities!`,
     tools: {
       addSkills: resumeToolsWithArtifacts.addSkills,
+      removeSkill: resumeToolsWithArtifacts.removeSkill,
       addProject: resumeToolsWithArtifacts.addProject,
+      updateProject: resumeToolsWithArtifacts.updateProject,
+      updateSummary: resumeToolsWithArtifacts.updateSummary,
       createResumeSection: resumeToolsWithArtifacts.createResumeSection,
+      updateSectionTitle: resumeToolsWithArtifacts.updateSectionTitle,
       getResumeContext: resumeToolsWithArtifacts.getResumeContext,
+      checkWorkflowProgress: resumeToolsWithArtifacts.checkWorkflowProgress,
     },
-    maxTurns: 5,
-    matchOn: ['skill', 'project', 'technology', 'programming', 'language', 'framework', 'tool'],
+    maxTurns: 10,
+    matchOn: ['skill', 'project', 'technology', 'programming', 'language', 'framework', 'tool', 'portfolio', 'built'],
   });
 
   // Main orchestrator agent that routes to specialists
@@ -149,20 +241,15 @@ export function createResumeAgents() {
     name: 'Resume Assistant',
     model: chatModel,
     instructions: (context) => {
-      const basePrompt = context?.resumeId
-        ? getResumeEditingPrompt({
-          id: context.resumeId,
-          title: '',
-          personalInfo: { name: '' },
-          sections: [],
-          template: 'default',
-          metadata: {
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            lastEdited: new Date().toISOString(),
-            version: 1,
-          },
-        })
+      // Get actual resume data if available
+      let currentResume: Resume | null = null;
+      if (context?.resumeId) {
+        setCurrentResumeContext(context.resumeId);
+        currentResume = getResumeServer(context.resumeId);
+      }
+
+      const basePrompt = currentResume
+        ? getResumeEditingPrompt(currentResume)
         : getResumeCreationPrompt();
 
       return `${basePrompt}\n\nYou can route complex tasks to specialized agents, or handle them yourself for simple requests.`;
