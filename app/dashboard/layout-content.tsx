@@ -5,7 +5,6 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useHeader } from "@/lib/contexts/header-context";
-import { useChatPanel } from "@/lib/contexts/chat-panel-context";
 
 export default function DashboardLayoutContent({
   children,
@@ -13,10 +12,9 @@ export default function DashboardLayoutContent({
   children: ReactNode;
 }) {
   const { config } = useHeader();
-  const { showChatPanel } = useChatPanel();
 
   return (
-    <SidebarProvider forceCollapsed={showChatPanel}>
+    <SidebarProvider>
       <AppSidebar collapsible="icon" />
       <SidebarInset>
         <SiteHeader

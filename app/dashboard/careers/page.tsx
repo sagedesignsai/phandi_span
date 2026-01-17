@@ -10,7 +10,7 @@ import { listResumes, deleteResume, duplicateResume } from "@/lib/storage/resume
 import { useHeaderContext } from "@/lib/contexts/header-context";
 import type { Resume } from "@/lib/models/resume";
 
-export default function DashboardPage() {
+export default function CareersPage() {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const { updateConfig } = useHeaderContext();
 
@@ -21,7 +21,6 @@ export default function DashboardPage() {
     
     // Configure header with action buttons
     updateConfig({
-      description: `Your career management hub • ${loadedResumes.length} career profile${loadedResumes.length !== 1 ? 's' : ''}`,
       actions: (
         <div className="flex items-center gap-2">
           <Button variant="outline" asChild>
@@ -40,14 +39,6 @@ export default function DashboardPage() {
       ),
     });
   }, [updateConfig]);
-
-  useEffect(() => {
-    if (resumes.length > 0) {
-      updateConfig({
-        description: `Your career management hub • ${resumes.length} career profile${resumes.length !== 1 ? 's' : ''}`,
-      });
-    }
-  }, [resumes, updateConfig]);
 
   const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this career profile?')) {

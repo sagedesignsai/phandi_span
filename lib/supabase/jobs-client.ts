@@ -482,3 +482,44 @@ export async function getCoverLetter(id: string): Promise<CoverLetter | null> {
 
   return coverLetterSchema.parse(data);
 }
+
+/**
+ * Update a cover letter
+ */
+export async function updateCoverLetter(
+  id: string,
+  updates: Partial<CoverLetter>
+): Promise<CoverLetter> {
+  const supabase = await createClient();
+
+  const { data: updated, error } = await supabase
+    .from('cover_letters')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating cover letter:', error);
+    throw error;
+  }
+
+  return coverLetterSchema.parse(updated);
+}
+
+/**
+ * Delete a cover letter
+ */
+export async function deleteCoverLetter(id: string): Promise<void> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('cover_letters')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting cover letter:', error);
+    throw error;
+  }
+}

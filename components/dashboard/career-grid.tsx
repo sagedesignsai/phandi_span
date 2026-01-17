@@ -8,19 +8,19 @@ import { PlusIcon } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-interface ResumeGridProps {
+interface CareerGridProps {
   resumes: Resume[];
   onDelete?: (id: string) => void;
   onDuplicate?: (id: string) => void;
   className?: string;
 }
 
-export function ResumeGrid({ resumes, onDelete, onDuplicate, className }: ResumeGridProps) {
+export function CareerGrid({ resumes, onDelete, onDuplicate, className }: CareerGridProps) {
   if (resumes.length === 0) {
     return (
       <Empty
         title="No career profiles yet"
-        description="Create your first career profile to get started with resume building and job search tools"
+        description="Create your first career profile to get started"
         action={
           <Button asChild>
             <Link href="/dashboard/careers/new">
@@ -46,4 +46,3 @@ export function ResumeGrid({ resumes, onDelete, onDuplicate, className }: Resume
     </div>
   );
 }
-

@@ -158,7 +158,7 @@ export function WysiwygEditor({ resume, onSave, onCancel, className, showChatTog
   };
 
   const handleBlockUpdate = (blockId: string, data: unknown) => {
-    updateBlock(blockId, { data });
+    updateBlock(blockId, data as any);
   };
 
   const blockIds = blocks.map(b => b.id);

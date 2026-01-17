@@ -18,10 +18,10 @@ export function CTASection({ className }: CTASectionProps) {
             <span className="text-2xl font-bold text-muted-foreground">03</span>
             <div className="h-px w-12 bg-border" />
           </div>
-          <h2 className="text-4xl sm:text-5xl font-bold">Ready to Build Your Resume?</h2>
+          <h2 className="text-4xl sm:text-5xl font-bold">Ready to Advance Your Career?</h2>
           <p className="text-lg text-muted-foreground">
-            Join thousands of professionals who have created standout resumes with Phandi'span. 
-            Get started in minutes, no credit card required.
+            Join thousands of professionals managing their careers with Phandi'span. 
+            Get started in minutes with AI-powered tools for resumes, job search, and more.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Button asChild size="lg" className="text-base">
@@ -30,8 +30,8 @@ export function CTASection({ className }: CTASectionProps) {
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="text-base">
-              <Link href="/dashboard/resumes/new">
-                Create Resume
+              <Link href="/dashboard/careers/new">
+                Create Career Profile
               </Link>
             </Button>
           </div>

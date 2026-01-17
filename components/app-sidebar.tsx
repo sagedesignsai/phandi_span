@@ -38,13 +38,13 @@ const dashboardItems = [
     icon: IconDashboard,
   },
   {
-    title: "My Resumes",
-    url: "/dashboard/resumes",
+    title: "My Careers",
+    url: "/dashboard/careers",
     icon: IconFileDescription,
   },
   {
-    title: "New Resume",
-    url: "/dashboard/resumes/new",
+    title: "New Career Profile",
+    url: "/dashboard/careers/new",
     icon: IconFilePlus,
   },
   {
@@ -83,22 +83,22 @@ export function AppSidebar({ resumeId, ...props }: AppSidebarProps) {
     },
     {
       title: "Resume Editor",
-      url: `/dashboard/resumes/${resumeId}/edit`,
+      url: `/dashboard/careers/${resumeId}/resume-editor`,
       icon: IconFileDescription,
     },
     {
       title: "Job Matches",
-      url: `/dashboard/resumes/${resumeId}/jobs/matches`,
+      url: `/dashboard/careers/${resumeId}/jobs/matches`,
       icon: IconBriefcase,
     },
     {
       title: "My Applications",
-      url: `/dashboard/resumes/${resumeId}/jobs/applications`,
+      url: `/dashboard/careers/${resumeId}/jobs/applications`,
       icon: IconFileCheck,
     },
     {
       title: "Job Preferences",
-      url: `/dashboard/resumes/${resumeId}/jobs/preferences`,
+      url: `/dashboard/careers/${resumeId}/jobs/preferences`,
       icon: IconSettings,
     },
   ] : []
@@ -117,7 +117,7 @@ export function AppSidebar({ resumeId, ...props }: AppSidebarProps) {
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Phandi'span</span>
-                  <span className="truncate text-xs text-muted-foreground">Resume Builder</span>
+                  <span className="truncate text-xs text-muted-foreground">Career Platform</span>
                 </div>
               </Link>
             </SidebarMenuButton>

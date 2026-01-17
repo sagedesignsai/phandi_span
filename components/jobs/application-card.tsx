@@ -105,7 +105,7 @@ export function ApplicationCard({ application, onViewCoverLetter }: ApplicationC
             </Button>
           )}
           <Button variant="outline" size="sm" asChild>
-            <a href={`/dashboard/resumes/${application.resume_id}/jobs/applications/${application.id}`} target="_blank">
+            <a href={`/dashboard/careers/${application.resume_id}/jobs/applications/${application.id}`} target="_blank">
               <ExternalLink className="h-4 w-4 mr-2" />
               View Details
             </a>

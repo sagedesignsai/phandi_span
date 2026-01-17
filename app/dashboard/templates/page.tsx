@@ -1,6 +1,5 @@
 "use client";
 
-import { SiteHeader } from "@/components/site-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,11 +8,27 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { resumeTemplates } from "@/lib/resume-templates";
 import { createResume } from "@/lib/storage/resume-store";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useHeader } from "@/lib/contexts/header-context";
 
 export default function TemplatesPage() {
   const router = useRouter();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const { updateConfig } = useHeader();
+
+  useEffect(() => {
+    updateConfig({
+      title: "Choose a Template",
+      description: "Select a template to start building your resume",
+      actions: (
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/dashboard">
+            <ArrowLeftIcon className="size-4" />
+          </Link>
+        </Button>
+      ),
+    });
+  }, [updateConfig]);
 
   const handleUseTemplate = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -26,23 +41,11 @@ export default function TemplatesPage() {
       sections: [],
       template: templateId,
     });
-    router.push(`/dashboard/resumes/${newResume.id}/edit`);
+    router.push(`/dashboard/careers/${newResume.id}/resume-editor`);
   };
 
   return (
-    <>
-      <SiteHeader
-        title="Choose a Template"
-        description="Select a template to start building your resume"
-        actions={
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/dashboard">
-                <ArrowLeftIcon className="size-4" />
-              </Link>
-            </Button>
-        }
-      />
-      <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="px-4 lg:px-6">
@@ -140,6 +143,5 @@ export default function TemplatesPage() {
           </div>
         </div>
       </div>
-    </>
   );
 }

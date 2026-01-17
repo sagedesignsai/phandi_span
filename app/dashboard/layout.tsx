@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import { HeaderProvider } from '@/lib/contexts/header-context';
-import { ChatPanelProvider } from '@/lib/contexts/chat-panel-context';
 import DashboardLayoutContent from './layout-content';
 
 export const metadata: Metadata = {
@@ -15,16 +14,14 @@ export default function DashboardLayout({
   children: ReactNode;
 }) {
   return (
-    <ChatPanelProvider>
-      <HeaderProvider
-        initialConfig={{
-          title: "Dashboard",
-          description: "Overview of your career management tools",
-          showSidebarTrigger: true,
-        }}
-      >
-        <DashboardLayoutContent>{children}</DashboardLayoutContent>
-      </HeaderProvider>
-    </ChatPanelProvider>
+    <HeaderProvider
+      initialConfig={{
+        title: "Dashboard",
+        description: "Overview of your career management tools",
+        showSidebarTrigger: true,
+      }}
+    >
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </HeaderProvider>
   );
 }

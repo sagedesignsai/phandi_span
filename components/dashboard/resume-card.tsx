@@ -28,7 +28,7 @@ export function ResumeCard({ resume, onDelete, onDuplicate }: ResumeCardProps) {
   });
 
   const handleCardClick = () => {
-    router.push(`/dashboard/resumes/${resume.id}`);
+    router.push(`/dashboard/careers/${resume.id}`);
   };
 
   return (
@@ -57,19 +57,19 @@ export function ResumeCard({ resume, onDelete, onDuplicate }: ResumeCardProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={`/dashboard/resumes/${resume.id}`}>
+                  <Link href={`/dashboard/careers/${resume.id}`}>
                     <EditIcon className="size-4 mr-2" />
-                    View Details
+                    Career Tools
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href={`/dashboard/resumes/${resume.id}/edit`}>
+                  <Link href={`/dashboard/careers/${resume.id}/resume-editor`}>
                     <EditIcon className="size-4 mr-2" />
-                    Edit
+                    Edit Resume
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href={`/dashboard/resumes/${resume.id}/jobs/matches`}>
+                  <Link href={`/dashboard/careers/${resume.id}/jobs/matches`}>
                     <BriefcaseIcon className="size-4 mr-2" />
                     Find Jobs
                   </Link>
@@ -103,10 +103,10 @@ export function ResumeCard({ resume, onDelete, onDuplicate }: ResumeCardProps) {
             </p>
             <div className="flex gap-2 mt-auto pt-2">
               <Button asChild variant="outline" size="sm" className="flex-1" onClick={(e) => e.stopPropagation()}>
-                <Link href={`/dashboard/resumes/${resume.id}/`}>View</Link>
+                <Link href={`/dashboard/careers/${resume.id}/`}>Tools</Link>
               </Button>
               <Button asChild size="sm" className="flex-1" onClick={(e) => e.stopPropagation()}>
-                <Link href={`/dashboard/resumes/${resume.id}/edit`}>Edit</Link>
+                <Link href={`/dashboard/careers/${resume.id}/resume-editor`}>Edit Resume</Link>
               </Button>
             </div>
           </div>

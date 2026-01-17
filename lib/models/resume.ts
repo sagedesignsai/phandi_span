@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { careerProfileContextSchema } from './career-profile';
 
 // Personal Information Schema
 export const personalInfoSchema = z.object({
@@ -111,6 +112,7 @@ export const resumeSchema = z.object({
   sections: z.array(resumeSectionSchema),
   template: z.string().default('default'),
   metadata: resumeMetadataSchema,
+  careerProfile: careerProfileContextSchema.optional(), // Career context for AI tools
 });
 
 export type Resume = z.infer<typeof resumeSchema>;

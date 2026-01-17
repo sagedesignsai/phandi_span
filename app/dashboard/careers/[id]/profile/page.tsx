@@ -1,0 +1,82 @@
+"use client";
+
+import { use, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { CareerProfileEditor } from '@/components/career/profile-editor';
+import { getResume, saveResume } from '@/lib/storage/resume-store';
+import { Button } from '@/components/ui/button';
+import { ArrowLeftIcon } from 'lucide-react';
+import Link from 'next/link';
+import type { Resume } from '@/lib/models/resume';
+import type { CareerProfileContext } from '@/lib/models/career-profile';
+import { useHeader } from '@/lib/contexts/header-context';
+import { toast } from 'sonner';
+
+export default function CareerProfilePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const resolvedParams = use(params);
+  const careerId = resolvedParams.id;
+  const router = useRouter();
+  const [resume, setResume] = useState<Resume | null>(null);
+  const { updateConfig } = useHeader();
+
+  useEffect(() => {
+    const loadedResume = getResume(careerId);
+    setResume(loadedResume);
+  }, [careerId]);
+
+  useEffect(() => {
+    if (resume) {
+      updateConfig({
+        title: `Career Profile: ${resume.title}`,
+        description: 'Provide context to AI tools for better personalization',
+        actions: (
+          <Button variant="outline" asChild>
+            <Link href={`/dashboard/careers/${careerId}`}>
+              <ArrowLeftIcon className="size-4 mr-2" />
+              Back to Career Tools
+            </Link>
+          </Button>
+        ),
+      });
+    }
+  }, [resume, careerId, updateConfig]);
+
+  const handleSave = (profile: CareerProfileContext) => {
+    if (!resume) return;
+
+    const updatedResume: Resume = {
+      ...resume,
+      careerProfile: profile,
+      metadata: {
+        ...resume.metadata,
+        updatedAt: new Date().toISOString(),
+      },
+    };
+
+    saveResume(updatedResume);
+    setResume(updatedResume);
+    toast.success('Career profile saved successfully');
+  };
+
+  if (!resume) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 flex-col p-6 max-w-4xl mx-auto">
+      <CareerProfileEditor
+        profile={resume.careerProfile}
+        onSave={handleSave}
+        onCancel={() => router.push(`/dashboard/careers/${careerId}`)}
+      />
+    </div>
+  );
+}
