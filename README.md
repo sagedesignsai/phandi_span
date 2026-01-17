@@ -2,23 +2,78 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+ 
+- pnpm (recommended) or npm/yarn/bun
+- A Supabase account ([sign up here](https://supabase.com))
+
+### Environment Setup
+
+1. Create a `.env.local` file in the root directory:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+cp .env.local.example .env.local
+```
+
+2. Get your Supabase credentials:
+   - Go to [Supabase Dashboard](https://supabase.com/dashboard)
+   - Create a new project or select an existing one
+   - Go to Project Settings → API
+   - Copy your Project URL and `anon` `public` key
+
+3. Add your Supabase credentials to `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+```
+
+   **Note:** The publishable key is the same as the `anon` `public` key found in your Supabase dashboard under Project Settings → API.
+
+### Running the Development Server
+
+First, install dependencies:
+
+```bash
+pnpm install
+```
+
+Then, run the development server:
+
+```bash
 pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Supabase Setup
+
+1. **Enable Email Authentication:**
+   - Go to Authentication → Providers in Supabase Dashboard
+   - Enable Email provider
+   - Configure email templates if needed
+
+2. **Enable OAuth Providers (Optional):**
+   - Go to Authentication → Providers
+   - Enable Google, GitHub, or other providers
+   - Configure OAuth credentials
+
+3. **Database Schema:**
+   - The app uses Supabase for authentication and database storage
+   - Tables will be created automatically or you can set them up manually
+   - See the database schema documentation for table structures
+
+### Authentication
+
+The app uses Supabase Authentication with support for:
+- Email/Password authentication
+- OAuth providers (Google, GitHub, etc.)
+- Session management with Next.js middleware
+
+For detailed Supabase setup instructions, see [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)
 
 ## Learn More
 

@@ -14,7 +14,7 @@ To follow this quickstart, you'll need:
 - Node.js 18+ and pnpm installed on your local development machine.
 - An OpenAI API key.
 
-If you haven't obtained your OpenAI API key, you can do so by [signing up](https://platform.openai.com/signup/) on the OpenAI website.
+If you haven't obtained your OpenAI API key, you can do so by [signing up](https://platform.openai.com/auth/signup/) on the OpenAI website.
 
 ## Create Your Application
 

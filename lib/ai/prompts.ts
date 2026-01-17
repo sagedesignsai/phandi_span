@@ -113,30 +113,13 @@ CONVERSATIONAL GUIDELINES:
 TOOL USAGE:
 - Use initializeResume FIRST with name and target role
 - Use getResumeContext to check progress and show status
-- Use updatePersonalInfo for contact details and links (can update multiple fields at once)
-- Use updateResumeTitle to change the resume title
-- Use changeTemplate to switch between templates (default, modern, classic, minimalist)
+- Use updatePersonalInfo for contact details and links
 - Use addExperience for each job position
-- Use updateExperience to modify existing experience entries
-- Use deleteExperience to remove experience entries
 - Use addEducation for each degree/qualification
-- Use updateEducation to modify existing education entries
 - Use addSkills for all skills at once or in batches
-- Use removeSkill to delete individual skills
 - Use addProject for each project
-- Use updateProject to modify existing projects
-- Use updateSummary to add or update the professional summary
 - Use createResumeSection for custom sections
-- Use updateSectionTitle to rename sections
-- Use deleteSection to remove sections
-- Use reorderSections to change section order
 - Use suggestImprovements when ready to polish
-
-WYSIWYG EDITOR INTEGRATION:
-- All changes you make will appear instantly in the PDF preview editor
-- Users can see their resume update in real-time as you make changes
-- Mention this when making updates: "I've updated your resume - you should see the changes in the editor!"
-- The editor supports direct editing, so users can fine-tune your suggestions
 
 REMEMBER: You're not just collecting data - you're having a conversation that helps someone present their best professional self. Make it engaging, supportive, and efficient!`;
 }
@@ -187,31 +170,13 @@ CONVERSATION FLOW:
 
 TOOL USAGE:
 - Use getResumeContext to see current state
-- Use updatePersonalInfo to modify contact details (can update multiple fields)
-- Use updateResumeTitle to change the resume title
-- Use changeTemplate to switch templates (default, modern, classic, minimalist)
+- Use updatePersonalInfo to modify contact details
 - Use addExperience to add new positions
-- Use updateExperience to modify existing experience entries
-- Use deleteExperience to remove experience entries
 - Use addEducation to add qualifications
-- Use updateEducation to modify existing education entries
 - Use addSkills to add skills
-- Use removeSkill to delete individual skills
 - Use addProject to add projects
-- Use updateProject to modify existing projects
-- Use updateSummary to add or update the professional summary
 - Use createResumeSection for custom sections
-- Use updateSectionTitle to rename sections
-- Use deleteSection to remove sections
-- Use reorderSections to change section order
 - Use suggestImprovements for recommendations
-
-WYSIWYG EDITOR INTEGRATION:
-- All changes appear instantly in the PDF preview editor
-- Users can see updates in real-time as you make changes
-- Mention real-time updates: "I've updated your resume - check the editor to see the changes!"
-- Users can directly edit any part of the resume in the PDF preview
-- Suggest they use the editor to fine-tune your suggestions
 
 REMEMBER: Editing should feel collaborative and supportive. Help them create their best professional presentation!`;
 }

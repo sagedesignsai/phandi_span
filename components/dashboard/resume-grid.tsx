@@ -23,7 +23,7 @@ export function ResumeGrid({ resumes, onDelete, onDuplicate, className }: Resume
         description="Create your first resume to get started"
         action={
           <Button asChild>
-            <Link href="/resumes/new">
+            <Link href="/dashboard/resumes/new">
               <PlusIcon className="size-4 mr-2" />
               Create Resume
             </Link>

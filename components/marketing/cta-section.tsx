@@ -30,7 +30,7 @@ export function CTASection({ className }: CTASectionProps) {
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="text-base">
-              <Link href="/resumes/new">
+              <Link href="/dashboard/resumes/new">
                 Create Resume
               </Link>
             </Button>

@@ -3,7 +3,6 @@ import { InMemoryProvider } from '@ai-sdk-tools/memory/in-memory';
 import { chatModel } from './provider';
 import { resumeToolsWithArtifacts, setCurrentResumeContext } from './tools-with-artifacts';
 import { getResumeCreationPrompt, getResumeEditingPrompt, getInitialGreeting } from './prompts';
-import { getResumeServer } from '@/lib/storage/resume-store-server';
 import type { Resume } from '@/lib/models/resume';
 
 /**
@@ -24,15 +23,21 @@ export function createResumeAgent(resumeId?: string | null): Agent<ResumeAgentCo
   // Set resume context for tools
   setCurrentResumeContext(resumeId ?? null);
 
-  // Get actual resume data if available
-  let currentResume: Resume | null = null;
-  if (resumeId) {
-    currentResume = getResumeServer(resumeId);
-  }
-
   // Determine instructions based on whether we're editing or creating
-  const instructions = currentResume
-    ? getResumeEditingPrompt(currentResume)
+  const instructions = resumeId
+    ? getResumeEditingPrompt({
+      id: resumeId,
+      title: '',
+      personalInfo: { name: '' },
+      sections: [],
+      template: 'default',
+      metadata: {
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastEdited: new Date().toISOString(),
+        version: 1,
+      },
+    })
     : getResumeCreationPrompt();
 
   return new Agent<ResumeAgentContext>({
@@ -108,10 +113,9 @@ export function createResumeAgents() {
 
 APPROACH:
 - Ask engagingly: "What's your email address?" (one at a time)
-- After each answer, immediately use updatePersonalInfo tool (can update multiple fields at once)
+- After each answer, immediately use updatePersonalInfo tool
 - Celebrate completion: "Perfect! Now let's get your phone number..."
 - Be encouraging: "Great contact info! Any professional links you'd like to include?"
-- Mention: "I've updated your resume - you should see the changes in the editor!"
 
 Ask for (in order):
 1. Email address
@@ -124,8 +128,6 @@ Always use tools immediately after gathering each piece of information!`,
     tools: {
       initializeResume: resumeToolsWithArtifacts.initializeResume,
       updatePersonalInfo: resumeToolsWithArtifacts.updatePersonalInfo,
-      updateResumeTitle: resumeToolsWithArtifacts.updateResumeTitle,
-      changeTemplate: resumeToolsWithArtifacts.changeTemplate,
       getResumeContext: resumeToolsWithArtifacts.getResumeContext,
       checkWorkflowProgress: resumeToolsWithArtifacts.checkWorkflowProgress,
     },
@@ -155,10 +157,7 @@ APPROACH:
 Be supportive and help them articulate their achievements!`,
     tools: {
       addExperience: resumeToolsWithArtifacts.addExperience,
-      updateExperience: resumeToolsWithArtifacts.updateExperience,
-      deleteExperience: resumeToolsWithArtifacts.deleteExperience,
       createResumeSection: resumeToolsWithArtifacts.createResumeSection,
-      updateSectionTitle: resumeToolsWithArtifacts.updateSectionTitle,
       getResumeContext: resumeToolsWithArtifacts.getResumeContext,
       checkWorkflowProgress: resumeToolsWithArtifacts.checkWorkflowProgress,
     },
@@ -187,9 +186,7 @@ APPROACH:
 Help them present their educational achievements professionally!`,
     tools: {
       addEducation: resumeToolsWithArtifacts.addEducation,
-      updateEducation: resumeToolsWithArtifacts.updateEducation,
       createResumeSection: resumeToolsWithArtifacts.createResumeSection,
-      updateSectionTitle: resumeToolsWithArtifacts.updateSectionTitle,
       getResumeContext: resumeToolsWithArtifacts.getResumeContext,
       checkWorkflowProgress: resumeToolsWithArtifacts.checkWorkflowProgress,
     },
@@ -223,12 +220,8 @@ FOR PROJECTS:
 Be enthusiastic about helping them showcase their capabilities!`,
     tools: {
       addSkills: resumeToolsWithArtifacts.addSkills,
-      removeSkill: resumeToolsWithArtifacts.removeSkill,
       addProject: resumeToolsWithArtifacts.addProject,
-      updateProject: resumeToolsWithArtifacts.updateProject,
-      updateSummary: resumeToolsWithArtifacts.updateSummary,
       createResumeSection: resumeToolsWithArtifacts.createResumeSection,
-      updateSectionTitle: resumeToolsWithArtifacts.updateSectionTitle,
       getResumeContext: resumeToolsWithArtifacts.getResumeContext,
       checkWorkflowProgress: resumeToolsWithArtifacts.checkWorkflowProgress,
     },
@@ -241,15 +234,20 @@ Be enthusiastic about helping them showcase their capabilities!`,
     name: 'Resume Assistant',
     model: chatModel,
     instructions: (context) => {
-      // Get actual resume data if available
-      let currentResume: Resume | null = null;
-      if (context?.resumeId) {
-        setCurrentResumeContext(context.resumeId);
-        currentResume = getResumeServer(context.resumeId);
-      }
-
-      const basePrompt = currentResume
-        ? getResumeEditingPrompt(currentResume)
+      const basePrompt = context?.resumeId
+        ? getResumeEditingPrompt({
+          id: context.resumeId,
+          title: '',
+          personalInfo: { name: '' },
+          sections: [],
+          template: 'default',
+          metadata: {
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            lastEdited: new Date().toISOString(),
+            version: 1,
+          },
+        })
         : getResumeCreationPrompt();
 
       return `${basePrompt}\n\nYou can route complex tasks to specialized agents, or handle them yourself for simple requests.`;

@@ -1,281 +1,213 @@
-"use client";
+'use client';
 
-import React, { useEffect, useCallback, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import React, { useEffect, useRef } from 'react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { EditorToolbar } from './toolbar';
+import { BlockRenderer } from './block-renderer';
+import { useResumeWysiwyg } from '@/lib/hooks/use-resume-wysiwyg';
 import type { Resume } from '@/lib/models/resume';
-import { resumeSchema } from '@/lib/models/resume';
-import { useSharedChatContext } from '@/lib/ai/chat-context';
-import { PDFCanvas } from './pdf-preview/pdf-canvas';
-import { PDFOverlay } from './pdf-preview/pdf-overlay';
-import { EditorToolbar } from './toolbar/editor-toolbar';
-import { PropertyPanel } from './panels/property-panel';
-import { usePDFEditor } from './hooks/use-pdf-editor';
-import { useEditableRegions } from './hooks/use-editable-regions';
-import { useAIUpdates } from './hooks/use-ai-updates';
-import { AIUpdateIndicator } from './components/ai-update-indicator';
-import { getPDFTemplate } from './templates';
 import { cn } from '@/lib/utils';
-import { createAutoSave } from '@/lib/utils/pdf-editor-utils';
-import type { EditableRegion } from './hooks/use-editable-regions';
-import type { SectionType } from '@/lib/models/resume';
+import { GripVerticalIcon } from 'lucide-react';
 
-export interface ResumeEditorProps {
+interface WysiwygEditorProps {
   resume: Resume;
   onSave: (resume: Resume) => void;
   onCancel?: () => void;
   className?: string;
+  showChatToggle?: boolean;
+  onToggleChat?: () => void;
 }
 
-/**
- * WYSIWYG Resume Editor
- * Main editor component with PDF preview and inline editing
- */
-export function WYSIWYGEditor({ resume, onSave, onCancel, className }: ResumeEditorProps) {
+function SortableBlockWrapper({
+  block,
+  isSelected,
+  isEditing,
+  onSelect,
+  onEdit,
+  onDelete,
+  onDuplicate,
+  onUpdate,
+}: {
+  block: any;
+  isSelected: boolean;
+  isEditing: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onDuplicate: () => void;
+  onUpdate: (data: unknown) => void;
+}) {
   const {
-    resume: editorResume,
-    zoom,
-    selectedRegionId,
-    editingItem,
-    updateResume,
-    zoomIn,
-    zoomOut,
-    resetZoom,
-    setSelectedRegion,
-    setEditingItem,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-  } = usePDFEditor(resume);
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: block.id });
 
-  const form = useForm<Resume>({
-    resolver: zodResolver(resumeSchema),
-    defaultValues: editorResume,
-    mode: 'onChange',
-  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
-  // Sync form with editor resume
-  useEffect(() => {
-    form.reset(editorResume);
-  }, [editorResume, form]);
+  return (
+    <div ref={setNodeRef} style={style} className="relative group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute left-0 top-0 h-full w-6 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10"
+      >
+        <GripVerticalIcon className="size-4 text-muted-foreground" />
+      </div>
+      <div className="pl-6">
+        <BlockRenderer
+          block={block}
+          isSelected={isSelected}
+          isEditing={isEditing}
+          onSelect={onSelect}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onDuplicate={onDuplicate}
+          onUpdate={onUpdate}
+        />
+      </div>
+    </div>
+  );
+}
 
-  // Get editable regions
-  const editableRegions = useEditableRegions(editorResume);
+export function WysiwygEditor({ resume, onSave, onCancel, className, showChatToggle, onToggleChat }: WysiwygEditorProps) {
+  const {
+    blocks,
+    resume: currentResume,
+    template,
+    isDirty,
+    selectedBlockId,
+    editingBlockId,
+    addBlock,
+    updateBlock,
+    deleteBlock,
+    duplicateBlock,
+    reorderBlocks,
+    selectBlock,
+    startEditing,
+    stopEditing,
+    save,
+    updateTemplate,
+  } = useResumeWysiwyg(resume, onSave);
 
-  // Get PDF template
-  const PDFTemplate = useMemo(() => getPDFTemplate(editorResume.template || 'default'), [editorResume.template]);
-
-  // Track AI updates for visual feedback
-  const [showAIUpdate, setShowAIUpdate] = useState(false);
-  const [aiUpdateMessage, setAIUpdateMessage] = useState<string>();
-
-  // Handle AI updates with visual feedback
-  const handleResumeUpdate = useCallback(
-    (updatedResume: Resume) => {
-      if (updatedResume.id === editorResume.id) {
-        // Show visual feedback that AI made changes
-        setSelectedRegion(undefined);
-        setEditingItem(undefined);
-        
-        // Update resume
-        updateResume(updatedResume);
-        form.reset(updatedResume);
-        
-        // Show update indicator
-        setShowAIUpdate(true);
-        setAIUpdateMessage('Resume updated! Changes are visible in the editor.');
-        setTimeout(() => setShowAIUpdate(false), 5000);
-        
-        // Scroll to top to show changes
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    },
-    [editorResume.id, updateResume, form, setSelectedRegion, setEditingItem]
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   );
 
-  // Use AI updates hook for better integration
-  const { updateCount } = useAIUpdates({
-    resume: editorResume,
-    onUpdate: handleResumeUpdate,
-    enabled: true,
-  });
+  // Use refs for callbacks to avoid dependency issues
+  const selectBlockRef = useRef(selectBlock);
+  const stopEditingRef = useRef(stopEditing);
+  selectBlockRef.current = selectBlock;
+  stopEditingRef.current = stopEditing;
 
-  // Handle region click
-  const handleRegionClick = useCallback(
-    (region: EditableRegion) => {
-      setSelectedRegion(region.id);
-
-      // If it's an item region, open property panel
-      if (region.itemId && region.sectionId) {
-        const section = editorResume.sections.find((s) => s.id === region.sectionId);
-        if (section) {
-          const itemIndex = section.items.findIndex(
-            (item) => (typeof item === 'object' && 'id' in item ? item.id : null) === region.itemId
-          );
-          if (itemIndex >= 0) {
-            setEditingItem({
-              type: section.type as 'experience' | 'education' | 'project' | 'skill',
-              item: section.items[itemIndex],
-              sectionId: section.id,
-              itemIndex,
-            });
-          }
+  // Handle click outside to deselect
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-block-id]')) {
+        selectBlockRef.current(null);
+        if (editingBlockId) {
+          stopEditingRef.current();
         }
-      }
-    },
-    [editorResume, setSelectedRegion, setEditingItem]
-  );
-
-  // Handle save
-  const handleSave = useCallback(() => {
-    const formData = form.getValues();
-    updateResume(formData);
-    onSave(formData);
-  }, [form, updateResume, onSave]);
-
-  // Auto-save with debouncing
-  const autoSave = useMemo(
-    () => createAutoSave(() => {
-      const formData = form.getValues();
-      onSave(formData);
-    }, 2000),
-    [form, onSave]
-  );
-
-  // Auto-save on resume changes
-  useEffect(() => {
-    autoSave();
-  }, [editorResume, autoSave]);
-
-  // Handle add section
-  const handleAddSection = useCallback(() => {
-    const newSection = {
-      id: `section-${Date.now()}`,
-      type: 'custom' as SectionType,
-      title: 'New Section',
-      items: [],
-      order: editorResume.sections.length,
-    };
-    updateResume({
-      sections: [...editorResume.sections, newSection],
-    });
-  }, [editorResume.sections, updateResume]);
-
-  // Handle template change
-  const handleTemplateChange = useCallback(
-    (templateId: string) => {
-      updateResume({ template: templateId });
-    },
-    [updateResume]
-  );
-
-  // Handle property panel update
-  const handlePropertyUpdate = useCallback(
-    (updates: Partial<Resume>) => {
-      if (editingItem) {
-        const section = editorResume.sections.find((s) => s.id === editingItem.sectionId);
-        if (section) {
-          const updatedItems = [...section.items];
-          updatedItems[editingItem.itemIndex] = {
-            ...(updatedItems[editingItem.itemIndex] as object),
-            ...updates,
-          };
-          const updatedSections = editorResume.sections.map((s) =>
-            s.id === editingItem.sectionId ? { ...s, items: updatedItems } : s
-          );
-          updateResume({ sections: updatedSections });
-        }
-      }
-    },
-    [editingItem, editorResume.sections, updateResume]
-  );
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + S to save
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave();
-      }
-      // Cmd/Ctrl + Z to undo
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      }
-      // Cmd/Ctrl + Shift + Z to redo
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && e.shiftKey) {
-        e.preventDefault();
-        redo();
-      }
-      // Escape to close property panel
-      if (e.key === 'Escape') {
-        setEditingItem(undefined);
-        setSelectedRegion(undefined);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSave, undo, redo, setEditingItem, setSelectedRegion]);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [editingBlockId]);
+
+  // Handle Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && editingBlockId) {
+        stopEditingRef.current();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [editingBlockId]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = blocks.findIndex(b => b.id === active.id);
+      const newIndex = blocks.findIndex(b => b.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reordered = arrayMove(blocks, oldIndex, newIndex);
+        const blockIds = reordered.map(b => b.id);
+        reorderBlocks(blockIds);
+      }
+    }
+  };
+
+  const handleBlockUpdate = (blockId: string, data: unknown) => {
+    updateBlock(blockId, { data });
+  };
+
+  const blockIds = blocks.map(b => b.id);
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
-      {/* AI Update Indicator */}
-      {showAIUpdate && (
-        <div className="px-4 pt-4">
-          <AIUpdateIndicator show={showAIUpdate} message={aiUpdateMessage} />
-        </div>
-      )}
-
-      {/* Toolbar */}
       <EditorToolbar
-        resume={editorResume}
-        onSave={handleSave}
-        onUndo={undo}
-        onRedo={redo}
-        onAddSection={handleAddSection}
-        onTemplateChange={handleTemplateChange}
-        onZoomIn={zoomIn}
-        onZoomOut={zoomOut}
-        onResetZoom={resetZoom}
-        zoom={zoom}
-        canUndo={canUndo}
-        canRedo={canRedo}
+        onAddBlock={addBlock}
+        onSave={save}
+        isDirty={isDirty}
+        showChatToggle={showChatToggle}
+        onToggleChat={onToggleChat}
       />
-
-      {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* PDF Preview */}
-        <div className="flex-1 relative overflow-auto bg-muted/20">
-          <div className="p-4 flex justify-center">
-            <div className="relative" style={{ width: '100%', maxWidth: '800px' }}>
-              <PDFCanvas
-                resume={editorResume}
-                template={PDFTemplate}
-                zoom={zoom}
-                className="shadow-lg"
-              />
-              <PDFOverlay
-                editableRegions={editableRegions}
-                onRegionClick={handleRegionClick}
-                selectedRegionId={selectedRegionId}
-                zoom={zoom}
-              />
-            </div>
+      
+      {/* Editor Panel */}
+      <div className="flex-1 overflow-hidden bg-background">
+        <ScrollArea className="h-full">
+          <div className="p-6 max-w-4xl mx-auto">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={blockIds} strategy={verticalListSortingStrategy}>
+                <div className="space-y-4">
+                  {blocks.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <p>No blocks yet. Click "Add Block" to get started.</p>
+                    </div>
+                  ) : (
+                    blocks.map((block) => (
+                      <SortableBlockWrapper
+                        key={block.id}
+                        block={block}
+                        isSelected={selectedBlockId === block.id}
+                        isEditing={editingBlockId === block.id}
+                        onSelect={() => selectBlock(block.id)}
+                        onEdit={() => startEditing(block.id)}
+                        onDelete={() => deleteBlock(block.id)}
+                        onDuplicate={() => duplicateBlock(block.id)}
+                        onUpdate={(data) => handleBlockUpdate(block.id, data)}
+                      />
+                    ))
+                  )}
+                </div>
+              </SortableContext>
+            </DndContext>
           </div>
-        </div>
-
-        {/* Property Panel */}
-        {editingItem && (
-          <PropertyPanel
-            item={editingItem.item as any}
-            type={editingItem.type}
-            onUpdate={handlePropertyUpdate}
-            onClose={() => setEditingItem(undefined)}
-          />
-        )}
+        </ScrollArea>
       </div>
     </div>
   );

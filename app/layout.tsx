@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import NextTopLoader from "nextjs-toploader";
 import { ChatProvider } from '@/lib/ai/chat-context';
+import { AuthProvider } from '@/lib/auth-context';
 
 export const metadata: Metadata = {
   title: "Phandi'span - Resume Management Platform",
@@ -34,11 +35,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ChatProvider>
-          <NextTopLoader />
-          {children}
-          <Toaster position="bottom-right" richColors />
-          </ChatProvider>
+          <AuthProvider>
+            <ChatProvider>
+              <NextTopLoader />
+              {children}
+              <Toaster position="bottom-right" richColors />
+            </ChatProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

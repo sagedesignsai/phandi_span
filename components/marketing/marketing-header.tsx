@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
 
 interface MarketingHeaderProps {
@@ -14,8 +15,8 @@ export function MarketingHeader({ className }: MarketingHeaderProps) {
     <header className={cn('sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60', className)}>
       <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
-          <span className="text-xl font-bold">Phandi'span</span>
+        <Link href="/" className="flex items-center">
+          <Logo size="default" />
         </Link>
 
         {/* Navigation */}
@@ -35,10 +36,16 @@ export function MarketingHeader({ className }: MarketingHeaderProps) {
         </nav>
 
         {/* CTA Button */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-end gap-4">
           <Button asChild size="sm">
-            <Link href="/dashboard">
+            <Link href="/auth/signup">
               Get Started
+            </Link>
+          </Button>
+
+          <Button asChild size="sm">
+            <Link href="/auth/login">
+              Login
             </Link>
           </Button>
         </div>
