@@ -10,7 +10,7 @@ interface ChatPanelContextType {
 const ChatPanelContext = createContext<ChatPanelContextType | undefined>(undefined);
 
 export function ChatPanelProvider({ children }: { children: ReactNode }) {
-  const [showChatPanel, setShowChatPanel] = useState(true);
+  const [showChatPanel, setShowChatPanel] = useState(false);
 
   return (
     <ChatPanelContext.Provider value={{ showChatPanel, setShowChatPanel }}>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import { HeaderProvider } from '@/lib/contexts/header-context';
+import { ChatPanelProvider } from '@/lib/contexts/chat-panel-context';
 import DashboardLayoutContent from './layout-content';
 
 export const metadata: Metadata = {
@@ -21,7 +22,9 @@ export default function DashboardLayout({
         showSidebarTrigger: true,
       }}
     >
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      <ChatPanelProvider>
+        <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      </ChatPanelProvider>
     </HeaderProvider>
   );
 }

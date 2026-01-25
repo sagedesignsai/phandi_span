@@ -5,77 +5,83 @@ import { useRouter } from 'next/navigation';
 import { WysiwygEditor } from '@/components/resume/wysiwyg/editor';
 import { ResumeChat } from '@/components/chat/resume-chat';
 import { ResumeViewer } from '@/components/resume/viewer';
-import { getResume, saveResume } from '@/lib/storage/resume-store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   ArrowLeftIcon,
   AlertCircleIcon,
-  EyeIcon,
-  SaveIcon,
-  CheckCircle2Icon,
   Loader2Icon,
   SparklesIcon,
-  FileTextIcon,
-  EditIcon,
-  FileIcon
 } from 'lucide-react';
 import Link from 'next/link';
-import type { Resume } from '@/lib/models/resume';
+import type { Resume } from '@/lib/models/career-profile';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { TemplateSelector } from '@/components/resume/template-selector';
-import { ExportButton } from '@/components/resume/export-button';
 import { useHeader } from '@/lib/contexts/header-context';
 import { useChatPanel } from '@/lib/contexts/chat-panel-context';
+import { useResume } from '@/lib/hooks/use-career-profiles';
 
 type ViewMode = 'editor' | 'preview';
 
 export default function ResumeEditPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; 'resume-id': string }>;
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const [resume, setResume] = useState<Resume | null>(null);
+
+  // Extract IDs from path params
+  const careerProfileId = resolvedParams.id;
+  const resumeId = resolvedParams['resume-id'];
+
+  const { resume, isLoading, updateResume: updateResumeAPI } = useResume(careerProfileId, resumeId);
+  const [localResume, setLocalResume] = useState<Resume | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('editor');
   const { showChatPanel, setShowChatPanel } = useChatPanel();
   const { updateConfig } = useHeader();
 
-  // Update header config when resume loads
+  // Initialize chat panel to hidden on mount
+  useEffect(() => {
+    setShowChatPanel(false);
+  }, [setShowChatPanel]);
+
+  // Update localResume when resume from API changes
   useEffect(() => {
     if (resume) {
+      setLocalResume(resume);
+    }
+  }, [resume]);
+
+  // Update header config when resume loads
+  useEffect(() => {
+    if (localResume) {
       updateConfig({
-        title: `Edit - ${resume.title || 'Resume'}`,
+        title: `Edit - ${localResume.title || 'Resume'}`,
         description: 'Edit your resume content and customize your template',
+        actions: (
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={`/dashboard/careers/${careerProfileId}`}>
+              <ArrowLeftIcon className="size-4" />
+            </Link>
+          </Button>
+        ),
       });
     }
-  }, [resume, updateConfig]);
-
-  // Load resume
-  useEffect(() => {
-    const loadedResume = getResume(resolvedParams.id);
-    if (loadedResume) {
-      setResume(loadedResume);
-      setLastSaved(new Date(loadedResume.metadata.updatedAt ? new Date(loadedResume.metadata.updatedAt) : new Date()));
-    }
-    setIsLoading(false);
-  }, [resolvedParams.id]);
+  }, [localResume, updateConfig, careerProfileId]);
 
   // Auto-save functionality
   const performSave = useCallback(async (resumeToSave: Resume, showToast = true) => {
     try {
       setIsSaving(true);
-      saveResume(resumeToSave);
-      setLastSaved(new Date());
+      await updateResumeAPI({
+        title: resumeToSave.title,
+        content: resumeToSave.content,
+        template: resumeToSave.template,
+      });
       setHasUnsavedChanges(false);
       if (showToast) {
         toast.success('Resume saved successfully', {
@@ -92,16 +98,16 @@ export default function ResumeEditPage({
     } finally {
       setIsSaving(false);
     }
-  }, []);
+  }, [updateResumeAPI]);
 
   const handleSave = useCallback((updatedResume: Resume) => {
-    setResume(updatedResume);
+    setLocalResume(updatedResume);
     performSave(updatedResume, true);
   }, [performSave]);
 
   // Stabilize the callback to prevent infinite loops
   const handleResumeUpdate = useCallback((updatedResume: Resume) => {
-    setResume(updatedResume);
+    setLocalResume(updatedResume);
     setHasUnsavedChanges(true);
     // Auto-save when AI updates resume
     performSave(updatedResume, false);
@@ -113,13 +119,13 @@ export default function ResumeEditPage({
       // Cmd/Ctrl + S to save
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
-        if (resume && hasUnsavedChanges) {
-          performSave(resume, true);
+        if (localResume && hasUnsavedChanges) {
+          performSave(localResume, true);
         }
       }
       // Escape to go back
       if (e.key === 'Escape' && e.target === document.body) {
-        router.push(`/dashboard/careers/${resume?.id}`);
+        router.push(`/dashboard/careers/${careerProfileId}`);
       }
       // Cmd/Ctrl + E to toggle editor
       if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
@@ -135,14 +141,7 @@ export default function ResumeEditPage({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [resume, hasUnsavedChanges, performSave, router]);
-
-  // Track form changes
-  useEffect(() => {
-    if (resume) {
-      setHasUnsavedChanges(true);
-    }
-  }, [resume]);
+  }, [localResume, hasUnsavedChanges, performSave, router, careerProfileId]);
 
   if (isLoading) {
     return (
@@ -155,7 +154,7 @@ export default function ResumeEditPage({
     );
   }
 
-  if (!resume) {
+  if (!localResume) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center space-y-4 max-w-md">
@@ -169,7 +168,7 @@ export default function ResumeEditPage({
             </p>
           </div>
           <Button asChild>
-            <Link href="/dashboard">Go to Dashboard</Link>
+            <Link href={`/dashboard/careers/${careerProfileId}`}>Back to Career Profile</Link>
           </Button>
         </div>
       </div>
@@ -194,7 +193,7 @@ export default function ResumeEditPage({
                 </div>
                 <div className="flex-1 min-h-0 overflow-hidden">
                   <ResumeChat
-                    resumeId={resume.id}
+                    resumeId={localResume.id!}
                     onResumeUpdate={handleResumeUpdate}
                     showPreview={false}
                   />
@@ -211,9 +210,9 @@ export default function ResumeEditPage({
               <div className="h-full bg-card overflow-hidden shadow-sm flex flex-col min-h-0">
                 {viewMode === 'editor' ? (
                   <WysiwygEditor
-                    resume={resume}
+                    resume={localResume}
                     onSave={handleSave}
-                    onCancel={() => router.push(`/dashboard/careers/${resume.id}`)}
+                    onCancel={() => router.push(`/dashboard/careers/${careerProfileId}`)}
                     className="h-full"
                     showChatToggle={true}
                     onToggleChat={() => setShowChatPanel(!showChatPanel)}
@@ -221,7 +220,7 @@ export default function ResumeEditPage({
                 ) : (
                   <ScrollArea className="flex-1 min-h-0">
                     <div className="p-6">
-                      <ResumeViewer resume={resume} className="shadow-none border-0" />
+                      <ResumeViewer resume={localResume} className="shadow-none border-0" />
                     </div>
                   </ScrollArea>
                 )}
@@ -235,9 +234,9 @@ export default function ResumeEditPage({
           <div className="h-full bg-card overflow-hidden shadow-sm flex flex-col min-h-0">
             {viewMode === 'editor' ? (
               <WysiwygEditor
-                resume={resume}
+                resume={localResume}
                 onSave={handleSave}
-                onCancel={() => router.push(`/dashboard/careers/${resume.id}`)}
+                onCancel={() => router.push(`/dashboard/careers/${careerProfileId}`)}
                 className="h-full"
                 showChatToggle={true}
                 onToggleChat={() => setShowChatPanel(!showChatPanel)}
@@ -245,7 +244,7 @@ export default function ResumeEditPage({
             ) : (
               <ScrollArea className="flex-1 min-h-0">
                 <div className="p-6">
-                  <ResumeViewer resume={resume} className="shadow-none border-0" />
+                  <ResumeViewer resume={localResume} className="shadow-none border-0" />
                 </div>
               </ScrollArea>
             )}

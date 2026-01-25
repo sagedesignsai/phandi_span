@@ -1,4 +1,3 @@
-import { ChatPanelProvider } from '@/lib/contexts/chat-panel-context';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -11,9 +10,5 @@ export default function CareersLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>
-  <ChatPanelProvider>
-    {children}
-  </ChatPanelProvider>
-</>;
+  return <>{children}</>;
 }

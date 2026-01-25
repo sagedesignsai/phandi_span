@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useHeader } from '@/lib/contexts/header-context';
-import { PlusIcon, FileTextIcon, MailIcon, BriefcaseIcon, ArrowRightIcon } from 'lucide-react';
+import { PlusIcon, FileTextIcon, MailIcon, BriefcaseIcon, ArrowRightIcon, UserIcon, EditIcon, FileIcon, SearchIcon, SettingsIcon, BarChart3Icon } from 'lucide-react';
 import Link from 'next/link';
 import { Empty } from '@/components/ui/empty';
 import { useResumes } from '@/lib/hooks/use-career-profiles';
@@ -19,7 +19,8 @@ export default function CareerProfilePage({
   const resolvedParams = use(params);
   const [careerProfile, setCareerProfile] = useState<CareerProfile | null>(null);
   const { updateConfig } = useHeader();
-  const { resumes, isLoading: resumesLoading, createResume } = useResumes(resolvedParams.id);
+  const { resumes, isLoading: resumesLoading } = useResumes(resolvedParams.id);
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     // Fetch career profile data
@@ -68,155 +69,233 @@ export default function CareerProfilePage({
     );
   }
 
+  const latestResume = resumes[0];
+
   return (
     <div className="flex flex-1 flex-col p-6">
-      <Tabs defaultValue="resumes" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="resumes">Resumes</TabsTrigger>
-          <TabsTrigger value="cover-letters">Cover Letters</TabsTrigger>
-          <TabsTrigger value="applications">Applications</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="tools">Tools</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="resumes" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">Resumes</h2>
-              <p className="text-muted-foreground">Manage resumes for this career profile</p>
-            </div>
-            <Button asChild>
-              <Link href={`/careers/new?profileId=${careerProfile.id}`}>
-                <PlusIcon className="size-4 mr-2" />
-                Create Resume
-              </Link>
-            </Button>
-          </div>
-
-          {resumesLoading ? (
-            <div className="text-center py-8">Loading resumes...</div>
-          ) : resumes.length === 0 ? (
-            <Empty
-              title="No resumes yet"
-              description="Create your first resume for this career profile"
-              action={
-                <Button asChild>
-                  <Link href={`/careers/new?profileId=${careerProfile.id}`}>
-                    <PlusIcon className="size-4 mr-2" />
-                    Create Resume
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Resume Preview Section */}
+            <Card className="col-span-1 md:col-span-2 lg:col-span-2">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="space-y-1">
+                  <CardTitle>Current Resume</CardTitle>
+                  <CardDescription>
+                    {latestResume ? `Last updated: ${new Date(latestResume.updated_at!).toLocaleDateString()}` : 'No resume found'}
+                  </CardDescription>
+                </div>
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/dashboard/careers/${careerProfile.id}/resumes`}>
+                    View All
+                    <ArrowRightIcon className="ml-2 size-4" />
                   </Link>
                 </Button>
-              }
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {resumes.map((resume) => (
-                <Card key={resume.id} className="hover:shadow-md transition-shadow">
+              </CardHeader>
+              <CardContent>
+                {resumesLoading ? (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                    Loading preview...
+                  </div>
+                ) : latestResume ? (
+                  <div className="flex flex-col sm:flex-row gap-6">
+                    <div className="w-full sm:w-[150px] aspect-[1/1.4] bg-muted rounded-lg border flex items-center justify-center shrink-0">
+                      <FileTextIcon className="size-12 text-muted-foreground" />
+                      {/* Placeholder for actual thumbnail/preview */}
+                    </div>
+                    <div className="space-y-4 flex-1">
+                      <div>
+                        <h3 className="font-semibold text-lg">{latestResume.title}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {/* We could show a summary here if available in the resume object */}
+                          Click to open the editor and make changes to this version.
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button asChild>
+                          <Link href={`/dashboard/careers/${careerProfile.id}/resumes/${latestResume.id}/edit`}>
+                            <EditIcon className="mr-2 size-4" />
+                            Edit Resume
+                          </Link>
+                        </Button>
+                        <Button asChild variant="secondary">
+                          <Link href={`/dashboard/careers/${careerProfile.id}/jobs/matches`}>
+                            <SearchIcon className="mr-2 size-4" />
+                            Find Matches
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <Empty
+                    title="No resume created"
+                    description="Get started by creating your first resume."
+                    action={
+                      <Button asChild>
+                        <Link href={`/dashboard/careers/${careerProfile.id}/resumes/new`}>
+                          <PlusIcon className="mr-2 size-4" />
+                          Create Resume
+                        </Link>
+                      </Button>
+                    }
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Stats / Quick Actions Sidebar */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">Quick Stats</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                        <SearchIcon className="size-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <span className="text-sm font-medium">Job Matches</span>
+                    </div>
+                    {/* Placeholder count - would need to fetch real count */}
+                    <span className="text-2xl font-bold">-</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <BriefcaseIcon className="size-4 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <span className="text-sm font-medium">Applications</span>
+                    </div>
+                    <span className="text-2xl font-bold">-</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">Profile Score</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Completeness</span>
+                      <span className="font-medium">85%</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-primary w-[85%]" />
+                    </div>
+                    <p className="text-xs text-muted-foreground pt-2">
+                      Add a cover letter to improve your score.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tools" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                title: 'Career Profile',
+                description: 'Set goals and preferences for AI personalization',
+                icon: UserIcon,
+                href: `/dashboard/careers/${careerProfile.id}/profile`,
+                color: 'bg-purple-500/10 text-purple-600',
+              },
+              {
+                title: 'Resumes',
+                description: 'Manage different versions of your resume',
+                icon: FileTextIcon,
+                href: `/dashboard/careers/${careerProfile.id}/resumes`,
+                color: 'bg-blue-500/10 text-blue-600',
+              },
+              {
+                title: 'Resume Templates',
+                description: 'Browse and apply professional templates',
+                icon: FileIcon,
+                href: '/dashboard/templates',
+                color: 'bg-pink-500/10 text-pink-600',
+              },
+              {
+                title: 'Cover Letters',
+                description: 'View and manage your cover letters',
+                icon: MailIcon,
+                href: `/dashboard/careers/${careerProfile.id}/cover-letters`,
+                color: 'bg-cyan-500/10 text-cyan-600',
+              },
+              {
+                title: 'Job Matcher',
+                description: 'Discover jobs matching your profile',
+                icon: SearchIcon,
+                href: `/dashboard/careers/${careerProfile.id}/jobs/matches`,
+                color: 'bg-green-500/10 text-green-600',
+              },
+              {
+                title: 'Application Tracker',
+                description: 'Monitor your job applications',
+                icon: BriefcaseIcon,
+                href: `/dashboard/careers/${careerProfile.id}/jobs/applications`,
+                color: 'bg-purple-500/10 text-purple-600',
+              },
+              {
+                title: 'Job Preferences',
+                description: 'Configure search and auto-apply settings',
+                icon: SettingsIcon,
+                href: `/dashboard/careers/${careerProfile.id}/jobs/preferences`,
+                color: 'bg-orange-500/10 text-orange-600',
+              },
+              {
+                title: 'Career Analytics',
+                description: 'Track your career progress and insights',
+                icon: BarChart3Icon,
+                href: '#',
+                color: 'bg-indigo-500/10 text-indigo-600',
+                disabled: true,
+              },
+            ].map((tool) => {
+              const Icon = tool.icon;
+              return (
+                <Card key={tool.title} className={tool.disabled ? 'opacity-50' : 'hover:shadow-md transition-shadow'}>
                   <CardHeader>
-                    <CardTitle className="text-lg">{resume.title}</CardTitle>
-                    <CardDescription>
-                      Updated {new Date(resume.updated_at!).toLocaleDateString()}
-                    </CardDescription>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${tool.color}`}>
+                        <Icon className="size-5" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{tool.title}</CardTitle>
+                        <CardDescription>{tool.description}</CardDescription>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <Button asChild className="w-full gap-2">
-                      <Link href={`/dashboard/careers/${careerProfile.id}/resumes/${resume.id}`}>
-                        Open Resume
-                        <ArrowRightIcon className="size-4" />
-                      </Link>
+                    <Button
+                      asChild={!tool.disabled}
+                      variant="outline"
+                      className="w-full"
+                      disabled={tool.disabled}
+                    >
+                      {tool.disabled ? (
+                        <span>Coming Soon</span>
+                      ) : (
+                        <Link href={tool.href} className="flex items-center justify-between w-full">
+                          <span>Open</span>
+                          <ArrowRightIcon className="size-4" />
+                        </Link>
+                      )}
                     </Button>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="cover-letters" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">Cover Letters</h2>
-              <p className="text-muted-foreground">Manage cover letters for this career profile</p>
-            </div>
-            <Button asChild disabled>
-              <span>
-                <PlusIcon className="size-4 mr-2" />
-                Create Cover Letter
-              </span>
-            </Button>
-          </div>
-
-          <Empty
-            title="No cover letters yet"
-            description="Cover letters will appear here once you create resumes and apply for jobs"
-          />
-        </TabsContent>
-
-        <TabsContent value="applications" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">Job Applications</h2>
-              <p className="text-muted-foreground">Track your job applications and their status</p>
-            </div>
-            <Button asChild>
-              <Link href="/dashboard/jobs">
-                <BriefcaseIcon className="size-4 mr-2" />
-                Find Jobs
-              </Link>
-            </Button>
-          </div>
-
-          <Empty
-            title="No applications yet"
-            description="Your job applications will appear here once you start applying"
-            action={
-              <Button asChild>
-                <Link href="/dashboard/jobs">
-                  <BriefcaseIcon className="size-4 mr-2" />
-                  Browse Jobs
-                </Link>
-              </Button>
-            }
-          />
-        </TabsContent>
-
-        <TabsContent value="settings" className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold">Profile Settings</h2>
-            <p className="text-muted-foreground">Configure your career profile preferences</p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Career Context</CardTitle>
-                <CardDescription>
-                  Set career goals and preferences for AI personalization
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href={`/dashboard/careers/${careerProfile.id}/context`}>
-                    Configure Career Context
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Job Preferences</CardTitle>
-                <CardDescription>
-                  Set job search and auto-apply preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href={`/dashboard/careers/${careerProfile.id}/jobs/preferences`}>
-                    Configure Job Preferences
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+              );
+            })}
           </div>
         </TabsContent>
       </Tabs>
