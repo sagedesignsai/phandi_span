@@ -89,30 +89,52 @@ export async function POST(req: Request) {
       limit: 100, // Match up to 100 jobs
     });
 
+    console.log(`Found ${jobs.length} jobs to match against`);
+
+    if (jobs.length === 0) {
+      return NextResponse.json({
+        message: 'No jobs available to match against. Try scraping jobs first.',
+        matches: [],
+        suggestion: 'Use the scrape endpoint to fetch jobs from job boards',
+      });
+    }
+
     // Calculate matches for each job
     const matches = [];
+    let processedJobs = 0;
+    let skippedJobs = 0;
+    
     for (const job of jobs) {
-      if (sources.length > 0 && !sources.includes(job.source)) {
-        continue; // Skip jobs from non-preferred sources
-      }
+      try {
+        if (sources.length > 0 && !sources.includes(job.source)) {
+          skippedJobs++;
+          continue; // Skip jobs from non-preferred sources
+        }
 
-      const matchResult = calculateMatchScore(job, resume, preferences);
+        const matchResult = calculateMatchScore(job, resume, preferences);
 
-      if (matchResult.score > 0) {
-        // Save or update match
-        const match = await saveJobMatch({
-          user_id: user.id,
-          job_id: job.id!,
-          resume_id: resumeId,
-          match_score: matchResult.score,
-          matched_skills: matchResult.matchedSkills,
-          missing_skills: matchResult.missingSkills,
-          status: 'new',
-        });
+        if (matchResult.score > 0) {
+          // Save or update match
+          const match = await saveJobMatch({
+            user_id: user.id,
+            job_id: job.id!,
+            resume_id: resumeId,
+            match_score: matchResult.score,
+            matched_skills: matchResult.matchedSkills,
+            missing_skills: matchResult.missingSkills,
+            status: 'new',
+          });
 
-        matches.push(match);
+          matches.push(match);
+        }
+        processedJobs++;
+      } catch (jobError) {
+        console.error(`Error processing job ${job.id}:`, jobError);
+        // Continue with other jobs
       }
     }
+
+    console.log(`Processed ${processedJobs} jobs, skipped ${skippedJobs}, found ${matches.length} matches`);
 
     return NextResponse.json({
       message: `Matched ${matches.length} jobs`,

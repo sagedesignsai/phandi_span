@@ -23,7 +23,7 @@ export function CareerGrid({ resumes, onDelete, onDuplicate, className }: Career
         description="Create your first career profile to get started"
         action={
           <Button asChild>
-            <Link href="/dashboard/careers/new">
+            <Link href="/careers/new">
               <PlusIcon className="size-4 mr-2" />
               Create Career Profile
             </Link>

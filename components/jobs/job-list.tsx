@@ -39,14 +39,17 @@ export function JobList({ resumeId, filters }: JobListProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to refresh jobs');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      toast.success('Jobs refreshed successfully');
+      const result = await response.json();
+      toast.success(`Jobs refreshed successfully. Found ${result.matches?.length || 0} matches.`);
       refetch();
     } catch (error) {
-      toast.error('Failed to refresh jobs');
-      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(`Failed to refresh jobs: ${errorMessage}`);
+      console.error('Job refresh error:', error);
     }
   };
 

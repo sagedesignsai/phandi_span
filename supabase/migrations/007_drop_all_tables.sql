@@ -1,0 +1,9 @@
+-- Drop all tables
+DROP TABLE IF EXISTS career_profile_contexts CASCADE;
+DROP TABLE IF EXISTS resumes CASCADE;
+DROP TABLE IF EXISTS career_profiles CASCADE;
+DROP TABLE IF EXISTS cover_letters CASCADE;
+DROP TABLE IF EXISTS job_applications CASCADE;
+DROP TABLE IF EXISTS job_matches CASCADE;
+DROP TABLE IF EXISTS jobs CASCADE;
+DROP TABLE IF EXISTS user_job_preferences CASCADE;

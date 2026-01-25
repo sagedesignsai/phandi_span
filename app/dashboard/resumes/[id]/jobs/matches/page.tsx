@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState } from "react";
 import { JobList } from "@/components/jobs/job-list";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -16,25 +16,30 @@ export default function JobMatchesPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id: resumeId } = use(params);
+  const resolvedParams = params as any;
+  const resumeId = resolvedParams.id || "";
   const [resume, setResume] = useState<Resume | null>(null);
   const { updateConfig } = useHeader();
 
   useEffect(() => {
-    const loadedResume = getResume(resumeId);
-    setResume(loadedResume);
-  }, [resumeId]);
+    const resolveParams = async () => {
+      const resolved = await params;
+      const loadedResume = getResume(resolved.id);
+      setResume(loadedResume);
+    };
+    resolveParams();
+  }, [params]);
 
   useEffect(() => {
     if (resume) {
       updateConfig({
         title: `Job Matches: ${resume.title}`,
-        description: "Discover jobs that match your career profile",
+        description: "Discover jobs that match this resume and preferences",
         actions: (
           <Button variant="outline" asChild>
-            <Link href={`/dashboard/careers/${resumeId}`}>
+            <Link href={`/dashboard/resumes/${resumeId}`}>
               <ArrowLeftIcon className="size-4 mr-2" />
-              Back to Career Tools
+              Back to Resume
             </Link>
           </Button>
         ),
