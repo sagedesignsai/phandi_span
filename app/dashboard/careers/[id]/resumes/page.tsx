@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Empty } from '@/components/ui/empty';
 import { useResumes } from '@/lib/hooks/use-career-profiles';
 import { useHeader } from '@/lib/contexts/header-context';
+import { CareerListSkeleton } from '@/components/career/career-list-skeleton';
 
 export default function ResumesPage({
   params,
@@ -49,7 +50,7 @@ export default function ResumesPage({
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8">Loading resumes...</div>
+        <CareerListSkeleton />
       ) : resumes.length === 0 ? (
         <Empty
           title="No resumes yet"

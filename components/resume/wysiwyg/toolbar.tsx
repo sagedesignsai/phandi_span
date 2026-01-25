@@ -11,6 +11,8 @@ import {
   FileTextIcon,
   MinusIcon,
   MessageSquareIcon,
+  TableIcon,
+  ImageIcon,
 } from 'lucide-react';
 import type { BlockType } from '@/lib/resume/editor/block-types';
 
@@ -30,6 +32,8 @@ const blockTypes: Array<{ type: BlockType; label: string; icon: React.ComponentT
   { type: 'skill', label: 'Skill', icon: CodeIcon },
   { type: 'project', label: 'Project', icon: FolderKanbanIcon },
   { type: 'summary', label: 'Summary', icon: FileTextIcon },
+  { type: 'table', label: 'Table', icon: TableIcon },
+  { type: 'image', label: 'Image', icon: ImageIcon },
   { type: 'divider', label: 'Divider', icon: MinusIcon },
 ];
 

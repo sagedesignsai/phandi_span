@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { nanoid } from 'nanoid';
 import type { Block, BlockType } from './block-types';
 import { createDefaultBlock } from './block-serialization';
@@ -26,13 +26,13 @@ export interface EditorActions {
 }
 
 export function useEditorState(initialBlocks: Block[]): [EditorState, EditorActions] {
-  const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
+  const [blocks, setBlocks] = useState<Block[]>(initialBlocks || []);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
 
   const addBlock = useCallback((type: BlockType, afterBlockId?: string): Block => {
     let newOrder: number;
-    
+
     if (afterBlockId) {
       const afterBlock = blocks.find(b => b.id === afterBlockId);
       if (afterBlock) {
@@ -49,7 +49,7 @@ export function useEditorState(initialBlocks: Block[]): [EditorState, EditorActi
     }
 
     const newBlock = createDefaultBlock(type, newOrder);
-    
+
     setBlocks(prev => {
       const updated = [...prev, newBlock];
       return updated.sort((a, b) => a.order - b.order);
@@ -59,7 +59,7 @@ export function useEditorState(initialBlocks: Block[]): [EditorState, EditorActi
   }, [blocks]);
 
   const updateBlock = useCallback((id: string, updates: Partial<Block>) => {
-    setBlocks(prev => prev.map(block => 
+    setBlocks(prev => prev.map(block =>
       block.id === id ? { ...block, ...updates } : block
     ));
   }, []);
@@ -104,10 +104,10 @@ export function useEditorState(initialBlocks: Block[]): [EditorState, EditorActi
           return { ...block, order: (index + 1) * 100 };
         })
         .filter((b): b is Block => b !== null);
-      
+
       // Keep blocks not in the reordered list
       const otherBlocks = prev.filter(b => !blockIds.includes(b.id));
-      
+
       return [...reordered, ...otherBlocks].sort((a, b) => a.order - b.order);
     });
   }, []);
@@ -125,13 +125,13 @@ export function useEditorState(initialBlocks: Block[]): [EditorState, EditorActi
     setEditingBlockId(null);
   }, []);
 
-  const state: EditorState = {
+  const state: EditorState = useMemo(() => ({
     blocks,
     selectedBlockId,
     editingBlockId,
-  };
+  }), [blocks, selectedBlockId, editingBlockId]);
 
-  const actions: EditorActions = {
+  const actions: EditorActions = useMemo(() => ({
     setBlocks,
     addBlock,
     updateBlock,
@@ -141,7 +141,17 @@ export function useEditorState(initialBlocks: Block[]): [EditorState, EditorActi
     selectBlock,
     startEditing,
     stopEditing,
-  };
+  }), [
+    setBlocks,
+    addBlock,
+    updateBlock,
+    deleteBlock,
+    duplicateBlock,
+    reorderBlocks,
+    selectBlock,
+    startEditing,
+    stopEditing,
+  ]);
 
   return [state, actions];
 }

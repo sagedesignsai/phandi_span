@@ -10,6 +10,7 @@ import { Empty } from "@/components/ui/empty";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useCareerProfiles } from "@/lib/hooks/use-career-profiles";
+import { CareerListSkeleton } from "@/components/career/career-list-skeleton";
 
 export default function CareersPage() {
   const { profiles, isLoading, createProfile, refetch } = useCareerProfiles();
@@ -44,8 +45,14 @@ export default function CareersPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center">Loading career profiles...</div>
+      <div className="flex flex-1 flex-col">
+        <div className="@container/main flex flex-1 flex-col gap-2">
+          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <div className="px-4 lg:px-6">
+              <CareerListSkeleton />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

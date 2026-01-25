@@ -10,9 +10,10 @@ import {
 import { DownloadIcon, FileTextIcon, FileIcon } from 'lucide-react';
 import type { Resume } from '@/lib/models/resume';
 import { generatePDF, generateHTML } from '@/lib/utils/export';
+import type { BlockResume } from '@/lib/models/resume';
 
 interface ExportButtonProps {
-  resume: Resume;
+  resume: BlockResume;
   className?: string;
 }
 

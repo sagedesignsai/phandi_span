@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreVerticalIcon } from 'lucide-react';
+import { CareerListSkeleton } from '@/components/career/career-list-skeleton';
 
 export default function CoverLettersPage({
   params,
@@ -37,7 +38,7 @@ export default function CoverLettersPage({
   useEffect(() => {
     const loadedResume = getResume(careerId);
     setResume(loadedResume);
-    
+
     if (loadedResume) {
       const allLetters = listCoverLetters();
       const filtered = allLetters.filter(letter => letter.resumeId === careerId);
@@ -74,10 +75,8 @@ export default function CoverLettersPage({
 
   if (!resume) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground">Career profile not found</p>
-        </div>
+      <div className="flex flex-1 flex-col p-6">
+        <CareerListSkeleton />
       </div>
     );
   }
@@ -110,8 +109,8 @@ export default function CoverLettersPage({
     <div className="flex flex-1 flex-col p-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {coverLetters.map((letter) => (
-          <Card 
-            key={letter.id} 
+          <Card
+            key={letter.id}
             className="hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => router.push(`/dashboard/careers/${careerId}/cover-letters/${letter.id}`)}
           >

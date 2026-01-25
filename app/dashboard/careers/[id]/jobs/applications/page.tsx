@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import { useHeader } from "@/lib/contexts/header-context";
+import { CareerListSkeleton } from "@/components/career/career-list-skeleton";
 
 export default function ApplicationsPage({
   params,
@@ -45,15 +46,29 @@ export default function ApplicationsPage({
     }
   }, [resume, resumeId, updateConfig]);
 
-  return (
-    <div className="flex flex-1 flex-col">
+  if (!resume) {
+    return (
+      <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="px-4 lg:px-6">
-              <ApplicationTracker resumeId={resumeId} />
+              <CareerListSkeleton />
             </div>
           </div>
         </div>
       </div>
     );
+  }
+
+  return (
+    <div className="flex flex-1 flex-col">
+      <div className="@container/main flex flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+          <div className="px-4 lg:px-6">
+            <ApplicationTracker resumeId={resumeId} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

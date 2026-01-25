@@ -6,6 +6,7 @@ import { WysiwygEditor } from '@/components/resume/wysiwyg/editor';
 import { ResumeChat } from '@/components/chat/resume-chat';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import type { Resume } from '@/lib/models/career-profile';
+import type { BlockResume } from '@/lib/models/resume';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeftIcon, CheckCircle2Icon, Loader2Icon, SparklesIcon } from 'lucide-react';
@@ -24,16 +25,15 @@ export default function NewResumePage({
   const router = useRouter();
   const { updateConfig } = useHeader();
   const { showChatPanel, setShowChatPanel } = useChatPanel();
-  const [currentResume, setCurrentResume] = useState<Resume>({
+  const [currentResume, setCurrentResume] = useState<BlockResume>({
     id: `temp-${Date.now()}`,
     title: 'Untitled Resume',
-    personalInfo: {
-      name: '',
-    },
-    sections: [],
+    blocks: [],
     template: 'default',
     metadata: {
-      lastModified: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastEdited: new Date().toISOString(),
       version: 1,
     },
   });
@@ -59,17 +59,17 @@ export default function NewResumePage({
     setShowChatPanel(false);
   }, [setShowChatPanel]);
 
-  const handleResumeUpdate = (resume: Resume) => {
+  const handleResumeUpdate = (resume: BlockResume) => {
     setCurrentResume(resume);
   };
 
-  const handleSave = (resume: Resume) => {
+  const handleSave = (resume: BlockResume) => {
     setCurrentResume(resume);
   };
 
   const handleFinish = async () => {
     // Validate that resume has some content
-    if (!currentResume.personalInfo.name && currentResume.sections.length === 0) {
+    if (currentResume.blocks.length === 0) {
       toast.error('Please add some content to your resume first');
       return;
     }
@@ -79,8 +79,7 @@ export default function NewResumePage({
       const savedResume = await createResume({
         title: currentResume.title || 'Untitled Resume',
         content: {
-          personalInfo: currentResume.personalInfo,
-          sections: currentResume.sections,
+          blocks: currentResume.blocks,
           metadata: currentResume.metadata,
         },
         template: currentResume.template || 'default',
@@ -158,7 +157,7 @@ export default function NewResumePage({
       )}
 
       {/* Footer Actions */}
-      {(currentResume.personalInfo.name || currentResume.sections.length > 0) && (
+      {(currentResume.blocks.length > 0) && (
         <div className="flex items-center justify-between px-4 py-4 border-t border-border bg-background/95 backdrop-blur">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CheckCircle2Icon className="size-4 text-green-600" />

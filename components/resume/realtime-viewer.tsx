@@ -7,7 +7,7 @@ import { Artifact, ArtifactContent, ArtifactHeader, ArtifactTitle, ArtifactDescr
 import { cn } from '@/lib/utils';
 import type { Resume } from '@/lib/models/resume';
 import { getResume, saveResume } from '@/lib/storage/resume-store';
-import { useSharedChatContext } from '@/lib/ai/chat-context';
+import { useSharedChatContext } from '@/lib/ai/resume/chat-context';
 import { useChat } from '@ai-sdk/react';
 
 interface RealtimeResumeViewerProps {

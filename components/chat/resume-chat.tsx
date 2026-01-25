@@ -1,8 +1,6 @@
-"use client";
+'use client'
 
-import React, { Fragment, useState, useEffect, useMemo } from 'react';
 import { useChat } from '@ai-sdk/react';
-import { useSharedChatContext } from '@/lib/ai/chat-context';
 import {
   Conversation,
   ConversationContent,
@@ -49,6 +47,8 @@ import { getResume, saveResume } from '@/lib/storage/resume-store';
 import type { Resume } from '@/lib/models/resume';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { AlertCircleIcon } from 'lucide-react';
+import React, { Fragment, useEffect, useState } from 'react';
+import { useSharedChatContext } from '@/lib/ai/resume/chat-context';
 
 interface ResumeChatProps {
   resumeId?: string;
@@ -77,7 +77,7 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
   useEffect(() => {
     if (resumeId) {
       const shouldRecreate = initialResumeIdRef.current !== resumeId;
-      setResumeId(resumeId, shouldRecreate);
+      setResumeId(resumeId);
       initialResumeIdRef.current = resumeId;
       setCurrentResumeContext(resumeId);
       const resume = getResume(resumeId);
@@ -86,7 +86,7 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
       }
     } else {
       if (initialResumeIdRef.current) {
-        setResumeId(null, true);
+        setResumeId(null);
         initialResumeIdRef.current = undefined;
       }
       setCurrentResumeContext(null);
@@ -121,7 +121,7 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
 
           // Only update resumeId if it's a new resume (not updating existing one)
           if (result.resumeId && !contextResumeId && !resumeId) {
-            setResumeId(result.resumeId, false);
+            setResumeId(result.resumeId);
           }
 
           if (onResumeUpdateRef.current) {
@@ -133,7 +133,7 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
         if (result.resumeId && !result.resume && !contextResumeId && !resumeId) {
           const newResume = getResume(result.resumeId);
           if (newResume) {
-            setResumeId(result.resumeId, false);
+            setResumeId(result.resumeId);
             if (onResumeUpdateRef.current) {
               onResumeUpdateRef.current(newResume);
             }
@@ -282,10 +282,10 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                           const isLastPart = partIndex === message.parts.length - 1;
                           const isPartStreaming = isStreaming && isLastPart && isLastMessage;
 
-                      switch (part.type) {
-                        case 'text':
+                          switch (part.type) {
+                            case 'text':
                               const textContent = (part as any).text || '';
-                          return (
+                              return (
                                 <Fragment key={`${message.id}-${partIndex}`}>
                                   <Message from={message.role}>
                                     <MessageContent>
@@ -313,8 +313,8 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                                 </Fragment>
                               );
 
-                        case 'reasoning':
-                          return (
+                            case 'reasoning':
+                              return (
                                 <Reasoning
                                   key={`${message.id}-${partIndex}`}
                                   className="w-full"
@@ -322,8 +322,8 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                                 >
                                   <ReasoningTrigger />
                                   <ReasoningContent>{(part as any).text}</ReasoningContent>
-                            </Reasoning>
-                          );
+                                </Reasoning>
+                              );
 
                             case 'source-url':
                             case 'source-document':
@@ -339,8 +339,8 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                                 };
                                 const toolName = toolPart.toolName || toolPart.type.replace('tool-', '');
 
-                          return (
-                            <Tool
+                                return (
+                                  <Tool
                                     key={`${message.id}-${partIndex}`}
                                     defaultOpen={toolPart.state === 'output-error' || toolPart.state === 'output-available'}
                                   >
@@ -363,9 +363,9 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                                   </Tool>
                                 );
                               }
-                          return null;
-                      }
-                    })}
+                              return null;
+                          }
+                        })}
                       </div>
                     );
                   })}
@@ -393,7 +393,7 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                 </PromptInputAttachments>
                 <PromptInputTextarea
                   onChange={(e) => setInput(e.target.value)}
-            value={input}
+                  value={input}
                   placeholder={
                     resumeId
                       ? "What would you like to add or change in your resume?"
@@ -404,21 +404,21 @@ export function ResumeChat({ resumeId, className, onResumeUpdate, showPreview = 
                 />
               </PromptInputBody>
               <PromptInputFooter>
-              <PromptInputTools>
-                <PromptInputActionMenu>
-                  <PromptInputActionMenuTrigger />
-                  <PromptInputActionMenuContent>
+                <PromptInputTools>
+                  <PromptInputActionMenu>
+                    <PromptInputActionMenuTrigger />
+                    <PromptInputActionMenuContent>
                       <PromptInputActionAddAttachments />
-                  </PromptInputActionMenuContent>
-                </PromptInputActionMenu>
-              </PromptInputTools>
+                    </PromptInputActionMenuContent>
+                  </PromptInputActionMenu>
+                </PromptInputTools>
                 <PromptInputSubmit
                   disabled={!input.trim() && status !== 'streaming'}
                   status={status}
                   onClick={status === 'streaming' ? stop : undefined}
                 />
-            </PromptInputFooter>
-          </PromptInput>
+              </PromptInputFooter>
+            </PromptInput>
           </div>
         </div>
       </div>

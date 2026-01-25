@@ -1,13 +1,14 @@
 "use client";
 
-import type { Resume } from '@/lib/models/resume';
-import { resumeSchema } from '@/lib/models/resume';
+import type { BlockResume } from '@/lib/models/resume';
+import { blockResumeSchema } from '@/lib/models/resume';
 import { nanoid } from 'nanoid';
+import { createBlockResume } from '@/lib/resume/editor/block-serialization';
 
 const STORAGE_KEY = 'phandi_resumes';
 
 // Get all resumes from localStorage
-export function listResumes(): Resume[] {
+export function listResumes(): BlockResume[] {
   if (typeof window === 'undefined') {
     return [];
   }
@@ -16,11 +17,11 @@ export function listResumes(): Resume[] {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return [];
     
-    const resumes = JSON.parse(stored) as Resume[];
+    const resumes = JSON.parse(stored) as BlockResume[];
     // Validate each resume against schema
     return resumes.filter((resume) => {
       try {
-        resumeSchema.parse(resume);
+        blockResumeSchema.parse(resume);
         return true;
       } catch {
         return false;
@@ -33,7 +34,7 @@ export function listResumes(): Resume[] {
 }
 
 // Get a single resume by ID
-export function getResume(id: string): Resume | null {
+export function getResume(id: string): BlockResume | null {
   if (typeof window === 'undefined') {
     return null;
   }
@@ -43,14 +44,14 @@ export function getResume(id: string): Resume | null {
 }
 
 // Save a resume (create or update)
-export function saveResume(resume: Resume): Resume {
+export function saveResume(resume: BlockResume): BlockResume {
   if (typeof window === 'undefined') {
     throw new Error('localStorage is not available');
   }
 
   try {
     // Validate resume
-    const validatedResume = resumeSchema.parse(resume);
+    const validatedResume = blockResumeSchema.parse(resume);
     
     // Update metadata
     const now = new Date().toISOString();
@@ -81,19 +82,8 @@ export function saveResume(resume: Resume): Resume {
 }
 
 // Create a new resume with generated ID
-export function createResume(data: Omit<Resume, 'id' | 'metadata'>): Resume {
-  const now = new Date().toISOString();
-  const newResume: Resume = {
-    ...data,
-    id: nanoid(),
-    metadata: {
-      createdAt: now,
-      updatedAt: now,
-      lastEdited: now,
-      version: 1,
-    },
-  };
-
+export function createResume(title: string = 'New Resume'): BlockResume {
+  const newResume = createBlockResume(title);
   return saveResume(newResume);
 }
 
@@ -120,11 +110,11 @@ export function deleteResume(id: string): boolean {
 }
 
 // Duplicate a resume
-export function duplicateResume(id: string): Resume | null {
+export function duplicateResume(id: string): BlockResume | null {
   const original = getResume(id);
   if (!original) return null;
 
-  const duplicated: Resume = {
+  const duplicated: BlockResume = {
     ...original,
     id: nanoid(),
     title: `${original.title} (Copy)`,

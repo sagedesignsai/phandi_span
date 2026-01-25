@@ -14,6 +14,8 @@ export const blockTypeSchema = z.enum([
   'project',
   'summary',
   'divider',
+  'table',
+  'image',
   'custom',
 ]);
 
@@ -146,6 +148,35 @@ export const summaryBlockDataSchema = z.object({
 export type SummaryBlockData = z.infer<typeof summaryBlockDataSchema>;
 
 /**
+ * Table Block Data
+ */
+export const tableBlockDataSchema = z.object({
+  id: z.string(),
+  title: z.string().optional(),
+  headers: z.array(z.string()),
+  rows: z.array(z.array(z.string())),
+  showHeaders: z.boolean().default(true),
+  bordered: z.boolean().default(true),
+});
+
+export type TableBlockData = z.infer<typeof tableBlockDataSchema>;
+
+/**
+ * Image Block Data
+ */
+export const imageBlockDataSchema = z.object({
+  id: z.string(),
+  src: z.string(),
+  alt: z.string().optional(),
+  caption: z.string().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  alignment: z.enum(['left', 'center', 'right']).default('center'),
+});
+
+export type ImageBlockData = z.infer<typeof imageBlockDataSchema>;
+
+/**
  * Custom Block Data
  */
 export const customBlockDataSchema = z.record(z.unknown());
@@ -164,6 +195,8 @@ export const blockSchema = baseBlockSchema.extend({
     skillBlockDataSchema,
     projectBlockDataSchema,
     summaryBlockDataSchema,
+    tableBlockDataSchema,
+    imageBlockDataSchema,
     customBlockDataSchema,
   ]),
 });

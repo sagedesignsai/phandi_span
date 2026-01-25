@@ -9,13 +9,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { EditorToolbar } from './toolbar';
 import { BlockRenderer } from './block-renderer';
 import { useResumeWysiwyg } from '@/lib/hooks/use-resume-wysiwyg';
-import type { Resume } from '@/lib/models/resume';
+import type { BlockResume } from '@/lib/models/resume';
 import { cn } from '@/lib/utils';
 import { GripVerticalIcon } from 'lucide-react';
 
 interface WysiwygEditorProps {
-  resume: Resume;
-  onSave: (resume: Resume) => void;
+  resume: BlockResume;
+  onSave: (resume: BlockResume) => void;
   onCancel?: () => void;
   className?: string;
   showChatToggle?: boolean;

@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { Empty } from '@/components/ui/empty';
 import { useResumes } from '@/lib/hooks/use-career-profiles';
 import type { CareerProfile } from '@/lib/models/career-profile';
+import { CareerProfileSkeleton } from '@/components/career/career-profile-skeleton';
 
 export default function CareerProfilePage({
   params,
@@ -18,6 +19,7 @@ export default function CareerProfilePage({
 }) {
   const resolvedParams = use(params);
   const [careerProfile, setCareerProfile] = useState<CareerProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { updateConfig } = useHeader();
   const { resumes, isLoading: resumesLoading } = useResumes(resolvedParams.id);
   const [activeTab, setActiveTab] = useState("overview");
@@ -26,6 +28,7 @@ export default function CareerProfilePage({
     // Fetch career profile data
     const fetchProfile = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch(`/api/career-profiles/${resolvedParams.id}`);
         if (response.ok) {
           const data = await response.json();
@@ -33,6 +36,8 @@ export default function CareerProfilePage({
         }
       } catch (error) {
         console.error('Error fetching career profile:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -47,6 +52,10 @@ export default function CareerProfilePage({
       });
     }
   }, [careerProfile, updateConfig]);
+
+  if (isLoading) {
+    return <CareerProfileSkeleton />;
+  }
 
   if (!careerProfile) {
     return (

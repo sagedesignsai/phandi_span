@@ -1,91 +1,50 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Resume } from '@/lib/models/resume';
-import { resumeToBlocks, blocksToResume } from '@/lib/resume/editor/block-serialization';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import type { BlockResume } from '@/lib/models/resume';
 import { useEditorState } from '@/lib/resume/editor/editor-state';
 import type { Block, BlockType } from '@/lib/resume/editor/block-types';
-import { useSharedChatContext } from '@/lib/ai/chat-context';
+import { useSharedChatContext } from '@/lib/ai/resume/chat-context';
 
 /**
- * Main hook for WYSIWYG resume editor
- * Manages blocks, resume sync, and AI integration
+ * Main hook for WYSIWYG resume editor (block-based only)
  */
-export function useResumeWysiwyg(initialResume: Resume, onSave: (resume: Resume) => void) {
-  const [resume, setResume] = useState<Resume>(initialResume);
+export function useResumeWysiwyg(initialResume: BlockResume, onSave: (resume: BlockResume) => void) {
+  const [resume, setResume] = useState<BlockResume>(initialResume);
   const [template, setTemplate] = useState<string>(initialResume.template || 'default');
   const [isDirty, setIsDirty] = useState(false);
   
-  // Convert resume to blocks
-  const initialBlocks = resumeToBlocks(initialResume);
-  const [editorState, editorActions] = useEditorState(initialBlocks);
+  // Initialize editor state with blocks from resume
+  const [editorState, editorActions] = useEditorState(initialResume.blocks as Block[]);
   
   // AI integration
   const { setOnResumeUpdate } = useSharedChatContext();
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
 
-  // Track if we're updating from blocks to prevent circular updates
-  const isUpdatingFromBlocksRef = useRef(false);
-  const blocksRef = useRef(editorState.blocks);
-  blocksRef.current = editorState.blocks;
-
-  // Sync blocks to resume when blocks change (but not if we're updating from AI)
-  useEffect(() => {
-    if (editorState.blocks.length > 0 && !isUpdatingFromBlocksRef.current) {
-      try {
-        const updatedResume = blocksToResume(editorState.blocks, resume.id, template);
-        // Only update if resume actually changed
-        const resumeString = JSON.stringify(resume);
-        const updatedResumeString = JSON.stringify(updatedResume);
-        if (resumeString !== updatedResumeString) {
-          setResume(updatedResume);
-          setIsDirty(true);
-        }
-      } catch (error) {
-        console.error('Error converting blocks to resume:', error);
-      }
-    }
-  }, [editorState.blocks, template, resume.id]);
-
-  // Store setBlocks in a ref to avoid dependency issues
-  const setBlocksRef = useRef(editorActions.setBlocks);
-  setBlocksRef.current = editorActions.setBlocks;
-
-  // Handle AI updates
-  useEffect(() => {
-    const handleResumeUpdate = (updatedResume: Resume) => {
-      if (updatedResume.id === resume.id) {
-        isUpdatingFromBlocksRef.current = true;
-        const newBlocks = resumeToBlocks(updatedResume);
-        setBlocksRef.current(newBlocks);
-        setResume(updatedResume);
-        setTemplate(updatedResume.template || 'default');
-        setIsDirty(false);
-        // Reset flag after a tick
-        setTimeout(() => {
-          isUpdatingFromBlocksRef.current = false;
-        }, 0);
-      }
-    };
-
-    setOnResumeUpdate(handleResumeUpdate);
-    return () => {
-      setOnResumeUpdate(undefined);
-    };
-  }, [resume.id, setOnResumeUpdate]);
-
-  // Save handler
+  // Save handler - creates block-based resume
   const handleSave = useCallback(() => {
     try {
-      const resumeToSave = blocksToResume(editorState.blocks, resume.id, template);
+      const resumeToSave: BlockResume = {
+        ...resume,
+        blocks: editorState.blocks,
+        template,
+        metadata: {
+          ...resume.metadata,
+          updatedAt: new Date().toISOString(),
+          lastEdited: new Date().toISOString(),
+          version: resume.metadata.version + 1,
+        },
+      };
+      
       onSaveRef.current(resumeToSave);
+      setResume(resumeToSave);
       setIsDirty(false);
     } catch (error) {
       console.error('Error saving resume:', error);
       throw error;
     }
-  }, [editorState.blocks, resume.id, template]);
+  }, [editorState.blocks, resume, template]);
 
   // Update template
   const updateTemplate = useCallback((newTemplate: string) => {
@@ -93,29 +52,28 @@ export function useResumeWysiwyg(initialResume: Resume, onSave: (resume: Resume)
     setIsDirty(true);
   }, []);
 
-  // Add block with section context
-  const addBlockWithContext = useCallback((type: BlockType, sectionType?: string) => {
-    const newBlock = editorActions.addBlock(type);
-    
-    // If adding to a section, find or create the section
-    if (sectionType && type !== 'section') {
-      const sectionBlock = editorState.blocks.find(
-        b => b.type === 'section' && (b.data as { sectionType?: string }).sectionType === sectionType
-      );
-      
-      if (sectionBlock) {
-        // Reorder to be after the section
-        const blocksAfter = editorState.blocks.filter(b => b.order > sectionBlock.order);
-        const newOrder = blocksAfter.length > 0
-          ? Math.min(...blocksAfter.map(b => b.order)) - 1
-          : sectionBlock.order + 1;
-        
-        editorActions.updateBlock(newBlock.id, { order: newOrder });
-      }
+  // Track changes
+  const blocksRef = useRef(editorState.blocks);
+  if (blocksRef.current !== editorState.blocks) {
+    blocksRef.current = editorState.blocks;
+    setIsDirty(true);
+  }
+
+  // Handle AI updates
+  const handleResumeUpdate = useCallback((updatedResume: BlockResume) => {
+    if (updatedResume.id === resume.id) {
+      setResume(updatedResume);
+      editorActions.setBlocks(updatedResume.blocks as Block[]);
+      setTemplate(updatedResume.template || 'default');
+      setIsDirty(false);
     }
-    
-    return newBlock;
-  }, [editorActions, editorState.blocks]);
+  }, [resume.id, editorActions]);
+
+  // Set AI update handler
+  useEffect(() => {
+    setOnResumeUpdate(handleResumeUpdate);
+    return () => setOnResumeUpdate(undefined);
+  }, [handleResumeUpdate, setOnResumeUpdate]);
 
   return {
     // State
@@ -128,7 +86,6 @@ export function useResumeWysiwyg(initialResume: Resume, onSave: (resume: Resume)
     
     // Actions
     ...editorActions,
-    addBlock: addBlockWithContext,
     save: handleSave,
     updateTemplate,
   };

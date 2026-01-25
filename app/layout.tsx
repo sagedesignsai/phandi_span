@@ -11,7 +11,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import NextTopLoader from "nextjs-toploader";
-import { ChatProvider } from '@/lib/ai/chat-context';
+import { ChatProvider } from '@/lib/ai/resume/chat-context';
 import { AuthProvider } from '@/lib/auth-context';
 
 export const metadata: Metadata = {

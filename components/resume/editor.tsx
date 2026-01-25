@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React, { useEffect } from 'react';
-import { useSharedChatContext } from '@/lib/ai/chat-context';
+import { useSharedChatContext } from '@/lib/ai/resume/chat-context';
 import { TemplateSelector } from './template-selector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
