@@ -25,11 +25,30 @@ export const resumeSchema = z.object({
 
 export type Resume = z.infer<typeof resumeSchema>;
 
-// Career Profile Context Schema (AI personalization)
+// Career Profile Context Schema (Complete career context including job search)
 export const careerProfileContextSchema = z.object({
   id: z.string().uuid().optional(),
   career_profile_id: z.string().uuid(),
   context_data: z.object({
+    // Job Search Preferences (Essential for matching)
+    jobSearch: z.object({
+      jobTypes: z.array(z.enum(['full-time', 'part-time', 'contract', 'remote'])).default(['full-time']),
+      industries: z.array(z.string()).default([]),
+      locations: z.array(z.string()).default([]),
+      experienceLevel: z.enum(['Entry Level', 'Mid Level', 'Senior Level', 'Executive']).optional(),
+      technicalSkills: z.array(z.string()).default([]),
+      salaryRange: z.object({
+        min: z.number().optional(),
+        max: z.number().optional(),
+        currency: z.string().default('ZAR'),
+      }).optional(),
+      preferredSources: z.array(z.string()).default(['indeed', 'linkedin']),
+      autoApply: z.object({
+        enabled: z.boolean().default(false),
+        threshold: z.number().min(50).max(100).default(80),
+      }).optional(),
+    }).optional(),
+
     // Career Goals
     careerGoals: z.object({
       shortTerm: z.string().optional(),
@@ -39,25 +58,17 @@ export const careerProfileContextSchema = z.object({
       targetCompanies: z.array(z.string()).optional(),
     }).optional(),
 
-    // Work Preferences
+    // Work Preferences (Additional preferences beyond job search)
     workPreferences: z.object({
       workType: z.enum(['remote', 'hybrid', 'onsite', 'flexible']).optional(),
-      employmentType: z.enum(['full-time', 'part-time', 'contract', 'freelance']).optional(),
-      salaryExpectation: z.object({
-        min: z.number().optional(),
-        max: z.number().optional(),
-        currency: z.string().default('USD'),
-      }).optional(),
       willingToRelocate: z.boolean().optional(),
-      preferredLocations: z.array(z.string()).optional(),
     }).optional(),
 
-    // Professional Summary
+    // Professional Profile
     professionalSummary: z.string().optional(),
     uniqueValueProposition: z.string().optional(),
     keyStrengths: z.array(z.string()).optional(),
     careerHighlights: z.array(z.string()).optional(),
-    industryExpertise: z.array(z.string()).optional(),
     softSkills: z.array(z.string()).optional(),
     additionalContext: z.string().optional(),
   }),
