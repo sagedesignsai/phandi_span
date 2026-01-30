@@ -13,6 +13,7 @@ import { ThemeProvider } from "next-themes";
 import NextTopLoader from "nextjs-toploader";
 import { ChatProvider } from '@/lib/ai/resume/chat-context';
 import { AuthProvider } from '@/lib/auth-context';
+import { QuickCreateProvider } from '@/lib/contexts/quick-create-context';
 
 export const metadata: Metadata = {
   title: "Phandi'span - Resume Management Platform",
@@ -37,9 +38,11 @@ export default function RootLayout({
         >
           <AuthProvider>
             <ChatProvider>
-              <NextTopLoader />
-              {children}
-              <Toaster position="bottom-right" richColors />
+              <QuickCreateProvider>
+                <NextTopLoader />
+                {children}
+                <Toaster position="bottom-right" richColors />
+              </QuickCreateProvider>
             </ChatProvider>
           </AuthProvider>
         </ThemeProvider>

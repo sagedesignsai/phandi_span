@@ -155,11 +155,14 @@ export function useResumes(profileId: string) {
 // Career Profile Context Hook
 export function useCareerProfileContext(profileId: string) {
   const [context, setContext] = useState<CareerProfileContext | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchContext = async () => {
-    if (!profileId) return;
+    if (!profileId) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
